@@ -1,0 +1,108 @@
+@import url("https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html,
+  body,
+  #root {
+    @apply h-full bg-ink text-chrome;
+  }
+
+  body {
+    @apply overflow-hidden bg-stars font-sans antialiased;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(103, 232, 249, 0.35) rgba(8, 17, 28, 0.65);
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply relative rounded-3xl border border-white/10 bg-slate-950/50 shadow-cockpit backdrop-blur-xl;
+  }
+
+  .glass-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 22%),
+      linear-gradient(135deg, rgba(103, 232, 249, 0.08), transparent 45%);
+    opacity: 0.7;
+  }
+
+  .glass-panel > * {
+    position: relative;
+  }
+
+  .hud-label {
+    @apply text-[11px] uppercase tracking-[0.32em] text-cyan/70;
+  }
+
+  .hud-value {
+    @apply text-sm font-medium text-white;
+  }
+
+  .status-pill {
+    @apply inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.24em];
+  }
+}
+
+@layer utilities {
+  .starfield::before,
+  .starfield::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      radial-gradient(circle, rgba(255, 255, 255, 0.9) 1px, transparent 1px),
+      radial-gradient(circle, rgba(103, 232, 249, 0.55) 1px, transparent 1px);
+    background-position:
+      0 0,
+      28px 34px;
+    background-size:
+      130px 130px,
+      180px 180px;
+    opacity: 0.12;
+  }
+
+  .cockpit-grid {
+    grid-template-columns: 320px minmax(0, 1fr) 392px;
+    grid-template-rows: minmax(0, 1fr) 220px;
+  }
+
+  .cockpit-grid > * {
+    min-height: 0;
+  }
+
+  .text-glow {
+    text-shadow: 0 0 24px rgba(103, 232, 249, 0.35);
+  }
+}
+
+@media (max-width: 1680px) {
+  .cockpit-grid {
+    grid-template-columns: 300px minmax(0, 1fr) 360px;
+    grid-template-rows: minmax(0, 1fr) 200px;
+  }
+}

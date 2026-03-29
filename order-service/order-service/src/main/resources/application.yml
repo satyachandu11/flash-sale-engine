@@ -1,0 +1,49 @@
+spring:
+  datasource:
+    url: "${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/flashsale?options=-c%20timezone=UTC}"
+    username: "${SPRING_DATASOURCE_USERNAME:admin}"
+    password: "${SPRING_DATASOURCE_PASSWORD:admin}"
+  kafka:
+    bootstrap-servers: "${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}"
+    consumer:
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+  jpa:
+    show-sql: ${SPRING_JPA_SHOW_SQL:true}
+    hibernate:
+      ddl-auto: "${SPRING_JPA_HIBERNATE_DDL_AUTO:update}"
+    properties:
+      hibernate:
+        dialect: "${SPRING_JPA_HIBERNATE_DIALECT:org.hibernate.dialect.PostgreSQLDialect}"
+      jdbc:
+        time_zone: "${SPRING_JPA_PROPERTIES_HIBERNATE_JDBC_TIME_ZONE:Asia/Kolkata}"
+
+server:
+  port: ${SERVER_PORT:8080}
+
+app:
+  cors:
+    allowed-origin: "${APP_CORS_ALLOWED_ORIGIN:http://localhost:5173}"
+
+order:
+  timeout:
+    scan-fixed-delay-ms: ${ORDER_TIMEOUT_SCAN_FIXED_DELAY_MS:5000}
+    created-seconds: ${ORDER_TIMEOUT_CREATED_SECONDS:30}
+    inventory-reserved-seconds: ${ORDER_TIMEOUT_INVENTORY_RESERVED_SECONDS:30}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus,health,metrics
+      cors:
+        allowed-origins: ${app.cors.allowed-origin}
+        allowed-methods: GET,POST,OPTIONS
+        allowed-headers: "*"
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: order-service

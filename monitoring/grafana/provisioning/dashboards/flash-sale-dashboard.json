@@ -1,0 +1,252 @@
+{
+  "title": "Flash Sale Engine",
+  "uid": "flash-sale-engine",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "5s",
+  "time": { "from": "now-5m", "to": "now" },
+  "panels": [
+
+    {
+      "id": 1,
+      "title": "Orders Per Second",
+      "description": "Rate of POST /orders requests hitting the Order Service. Watch this spike when the simulation starts.",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 2, "fillOpacity": 10 },
+          "unit": "reqps"
+        }
+      },
+      "targets": [
+        {
+          "expr": "rate(http_server_requests_seconds_count{application=\"order-service\", uri=\"/orders\", method=\"POST\", status=\"201\"}[30s])",
+          "legendFormat": "Successful Orders"
+        },
+        {
+          "expr": "rate(http_server_requests_seconds_count{application=\"order-service\", uri=\"/orders\", method=\"POST\", status=\"429\"}[30s])",
+          "legendFormat": "Rate Limited (429)"
+        }
+      ]
+    },
+
+    {
+      "id": 2,
+      "title": "Order Latency (P95 & P99)",
+      "description": "How long POST /orders takes. Should stay low. Rises if DB or Kafka slow down.",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": { "lineWidth": 2, "fillOpacity": 10 }
+        }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{application=\"order-service\", uri=\"/orders\"}[30s])) by (le))",
+          "legendFormat": "P95 Latency"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket{application=\"order-service\", uri=\"/orders\"}[30s])) by (le))",
+          "legendFormat": "P99 Latency"
+        }
+      ]
+    },
+
+    {
+      "id": 3,
+      "title": "Circuit Breaker — State",
+      "description": "Current state of the paymentGateway circuit breaker. GREEN = CLOSED (normal). RED = OPEN (fast-failing). YELLOW = HALF-OPEN (probing).",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 8, "w": 6, "h": 6 },
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "1": { "text": "CLOSED",    "color": "green"  } } },
+            { "type": "value", "options": { "2": { "text": "OPEN",      "color": "red"    } } },
+            { "type": "value", "options": { "3": { "text": "HALF-OPEN", "color": "yellow" } } }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green",  "value": null },
+              { "color": "red",    "value": 2    },
+              { "color": "yellow", "value": 3    }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "auto", "textMode": "auto", "colorMode": "background" },
+      "targets": [
+        {
+          "expr": "sum(resilience4j_circuitbreaker_state{name=\"paymentGateway\", state=\"closed\"}) * 1 + sum(resilience4j_circuitbreaker_state{name=\"paymentGateway\", state=\"open\"}) * 2 + sum(resilience4j_circuitbreaker_state{name=\"paymentGateway\", state=\"half_open\"}) * 3",
+          "legendFormat": "Circuit State"
+        }
+      ]
+    },
+
+    {
+      "id": 4,
+      "title": "Circuit Breaker — Failure Rate %",
+      "description": "Rolling failure rate over the last 10 calls. Crosses 50% → circuit OPENS. Watch this climb when you increase payment.gateway.failure-rate.",
+      "type": "gauge",
+      "gridPos": { "x": 6, "y": 8, "w": 6, "h": 6 },
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green",  "value": null },
+              { "color": "orange", "value": 30   },
+              { "color": "red",    "value": 50   }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        {
+          "expr": "resilience4j_circuitbreaker_failure_rate{name=\"paymentGateway\"}",
+          "legendFormat": "Failure Rate"
+        }
+      ]
+    },
+
+    {
+      "id": 5,
+      "title": "Payment Outcomes",
+      "description": "Rate of successful vs failed payments. Failed includes card declined AND circuit-breaker fast-fails.",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 6 },
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": { "lineWidth": 2, "fillOpacity": 10 }
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Failed" },   "properties": [ { "id": "color", "value": { "fixedColor": "red",   "mode": "fixed" } } ] },
+          { "matcher": { "id": "byName", "options": "Successful" },"properties": [ { "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } } ] },
+          { "matcher": { "id": "byName", "options": "Not Permitted (Circuit Open)" }, "properties": [ { "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } } ] }
+        ]
+      },
+      "targets": [
+        {
+          "expr": "rate(resilience4j_circuitbreaker_calls_total{name=\"paymentGateway\", kind=\"successful\"}[30s])",
+          "legendFormat": "Successful"
+        },
+        {
+          "expr": "rate(resilience4j_circuitbreaker_calls_total{name=\"paymentGateway\", kind=\"failed\"}[30s])",
+          "legendFormat": "Failed"
+        },
+        {
+          "expr": "rate(resilience4j_circuitbreaker_calls_total{name=\"paymentGateway\", kind=\"not_permitted\"}[30s])",
+          "legendFormat": "Not Permitted (Circuit Open)"
+        }
+      ]
+    },
+
+    {
+      "id": 6,
+      "title": "Inventory Cache — Hit vs Miss Rate",
+      "description": "Cache HITs mean no DB query was needed. Watch HIT rate rise as the simulation repeats the same productId. A 100% hit rate means zero DB load for stock checks.",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 14, "w": 12, "h": 7 },
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": { "lineWidth": 2, "fillOpacity": 10 }
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Cache HIT" },  "properties": [ { "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } } ] },
+          { "matcher": { "id": "byName", "options": "Cache MISS" }, "properties": [ { "id": "color", "value": { "fixedColor": "orange","mode": "fixed" } } ] }
+        ]
+      },
+      "targets": [
+        {
+          "expr": "rate(cache_gets_total{application=\"inventory-service\", name=\"inventory\", result=\"hit\"}[30s])",
+          "legendFormat": "Cache HIT"
+        },
+        {
+          "expr": "rate(cache_gets_total{application=\"inventory-service\", name=\"inventory\", result=\"miss\"}[30s])",
+          "legendFormat": "Cache MISS"
+        }
+      ]
+    },
+
+    {
+      "id": 7,
+      "title": "Cache Hit Ratio",
+      "description": "Percentage of inventory lookups served from Redis. Higher = less DB load. Should approach 100% during sustained simulation runs.",
+      "type": "gauge",
+      "gridPos": { "x": 12, "y": 14, "w": 6, "h": 7 },
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red",    "value": null },
+              { "color": "orange", "value": 0.5  },
+              { "color": "green",  "value": 0.8  }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        {
+          "expr": "rate(cache_gets_total{application=\"inventory-service\", name=\"inventory\", result=\"hit\"}[1m]) / (rate(cache_gets_total{application=\"inventory-service\", name=\"inventory\", result=\"hit\"}[1m]) + rate(cache_gets_total{application=\"inventory-service\", name=\"inventory\", result=\"miss\"}[1m]))",
+          "legendFormat": "Hit Ratio"
+        }
+      ]
+    },
+
+    {
+      "id": 8,
+      "title": "JVM Heap Memory — All Services",
+      "description": "Heap memory used per service. Useful for spotting memory leaks during a long simulation run.",
+      "type": "timeseries",
+      "gridPos": { "x": 18, "y": 14, "w": 6, "h": 7 },
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": { "lineWidth": 2, "fillOpacity": 10 }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(jvm_memory_used_bytes{application=\"order-service\",     area=\"heap\"})",
+          "legendFormat": "order-service"
+        },
+        {
+          "expr": "sum(jvm_memory_used_bytes{application=\"inventory-service\", area=\"heap\"})",
+          "legendFormat": "inventory-service"
+        },
+        {
+          "expr": "sum(jvm_memory_used_bytes{application=\"payment-service\",   area=\"heap\"})",
+          "legendFormat": "payment-service"
+        }
+      ]
+    }
+
+  ]
+}

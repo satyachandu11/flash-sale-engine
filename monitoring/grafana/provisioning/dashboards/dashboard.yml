@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: 'Flash Sale Engine'
+    orgId: 1
+    folder: 'Flash Sale'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    options:
+      path: /etc/grafana/provisioning/dashboards   # Grafana looks here for .json files
