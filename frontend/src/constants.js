@@ -2,6 +2,8 @@ export const ORDER_API_BASE_URL = import.meta.env.VITE_ORDER_API_BASE_URL ?? "ht
 export const INVENTORY_API_BASE_URL = import.meta.env.VITE_INVENTORY_API_BASE_URL ?? "http://localhost:8081";
 export const PAYMENT_API_BASE_URL = import.meta.env.VITE_PAYMENT_API_BASE_URL ?? "http://localhost:8082";
 export const GRAFANA_URL = import.meta.env.VITE_GRAFANA_URL ?? "http://localhost:3000";
+export const ACCESS_API_BASE_URL = import.meta.env.VITE_ACCESS_API_BASE_URL ?? "/access-api";
+export const ACCESS_GATE_ENABLED = (import.meta.env.VITE_ACCESS_GATE_ENABLED ?? "true").toLowerCase() !== "false";
 
 export const HEALTH_ENDPOINTS = {
   order: `${ORDER_API_BASE_URL}/actuator/health`,
