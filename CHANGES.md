@@ -5,6 +5,101 @@ Each section explains **what** changed, **why**, and **how it works** with examp
 
 ---
 
+## 0. Backend + Frontend â€” Admin Service, Invite Gate, and Separate Admin Console
+
+### 0.1 `admin-service` (NEW)
+
+**New module:** `admin-service/`
+
+**Purpose:** Adds a detachable admin-focused service that handles:
+- invite request intake from the public site
+- admin approval/rejection of requests
+- invite code generation with 24-hour expiry
+- Redis-backed admin/public browser sessions
+- stock top-up orchestration into `inventory-service`
+- outbound email hooks through Resend's HTTP API
+
+**Main public endpoints:**
+- `POST /public/invite-requests`
+- `POST /public/invites/redeem`
+- `GET /public/session`
+- `POST /public/logout`
+
+**Main admin endpoints:**
+- `POST /admin/auth/login`
+- `GET /admin/auth/session`
+- `POST /admin/auth/logout`
+- `GET /admin/invite-requests`
+- `POST /admin/invite-requests/{id}/approve`
+- `POST /admin/invite-requests/{id}/reject`
+- `GET /admin/invites`
+- `GET /admin/products`
+- `POST /admin/stock/top-ups`
+
+**Persistence added:**
+- `invite_requests`
+- `invite_codes`
+- `managed_products`
+
+**Runtime notes:**
+- invite codes are stored hashed; plaintext exists only at approval/send time
+- public access is UI-gated for v1, not enforced inside `order-service`
+- Redis stores ephemeral admin/public session tokens
+
+---
+
+### 0.2 `inventory-service` internal top-up hook
+
+**Files changed:** `InventoryService.java`, `InventoryServiceImpl.java`, `InventoryController.java`
+
+**What changed:** Added a protected internal endpoint:
+```http
+POST /inventory/internal/top-ups
+X-Internal-Service-Secret: ...
+```
+
+**Behaviour:**
+- increments `total_stock`
+- increments `available_stock`
+- leaves `reserved_stock` untouched
+- evicts the Redis cache entry for the product
+
+This endpoint is intended for `admin-service` only and rejects calls with an invalid shared secret.
+
+---
+
+### 0.3 Public frontend invite gate
+
+**Files changed:** `frontend/src/App.jsx`, `frontend/src/SimulatorApp.jsx`, `frontend/vite.config.js`, `frontend/nginx.conf`
+
+**What changed:**
+- the original simulation cockpit was preserved in `SimulatorApp.jsx`
+- `App.jsx` is now a lightweight access shell
+- the public site checks `/public/session` on load/refresh
+- valid sessions are routed to `/simulator`
+- missing/expired sessions are routed to `/`
+- invite redemption and invite requests flow through `/access-api/*`
+
+**Feature flag:** `VITE_ACCESS_GATE_ENABLED=false` bypasses the gate and restores the old direct simulator behaviour.
+
+---
+
+### 0.4 Separate `admin-frontend` (NEW)
+
+**New module:** `admin-frontend/`
+
+**Purpose:** Dedicated admin UI for:
+- admin login/session restore
+- pending invite review
+- invite history and expiry visibility
+- per-product stock top-up actions
+
+**Proxy path:** `/admin-api/*` â†’ `admin-service`
+
+This keeps the heavy public simulation UI separate from admin workflows and avoids adding more load to the existing cockpit bundle.
+
+---
+
 ## 1. Backend — Payment Service Startup Fixes
 
 ### 1.1 `@EnableScheduling` on PaymentServiceApplication

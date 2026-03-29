@@ -65,6 +65,40 @@ public class InventoryServiceImpl implements InventoryService {
 
     @Override
     @Transactional
+    public InventorySnapshotResponse addStock(UUID productId, int quantity) {
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("quantity must be greater than 0");
+        }
+
+        Inventory inventory = inventoryRepository.findByProductIdForUpdate(productId)
+                .orElseGet(() -> {
+                    log.info("No inventory found for productId: {}. Creating new record.", productId);
+                    return Inventory.builder()
+                            .productId(productId)
+                            .totalStock(0)
+                            .reservedStock(0)
+                            .availableStock(0)
+                            .createdAt(LocalDateTime.now())
+                            .build();
+                });
+
+        inventory.setTotalStock(inventory.getTotalStock() + quantity);
+        inventory.setAvailableStock(inventory.getAvailableStock() + quantity);
+        inventory.setUpdatedAt(LocalDateTime.now());
+
+        Inventory savedInventory = inventoryRepository.save(inventory);
+        inventoryCacheService.evictByProductId(productId);
+        log.info("Added {} units to productId: {}. Cache evicted.", quantity, productId);
+
+        return new InventorySnapshotResponse(
+                savedInventory.getProductId(),
+                savedInventory.getTotalStock(),
+                savedInventory.getReservedStock(),
+                savedInventory.getAvailableStock());
+    }
+
+    @Override
+    @Transactional
     public void reserveStock(UUID orderId, UUID productId, int quantity) {
 
         // READ with pessimistic write lock (SELECT ... FOR UPDATE).

@@ -1,0 +1,65 @@
+spring:
+  application:
+    name: admin-service
+  datasource:
+    url: "${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/flashsale?TimeZone=UTC&options=-c%20timezone=UTC}"
+    username: "${SPRING_DATASOURCE_USERNAME:admin}"
+    password: "${SPRING_DATASOURCE_PASSWORD:admin}"
+  data:
+    redis:
+      host: "${SPRING_DATA_REDIS_HOST:localhost}"
+      port: "${SPRING_DATA_REDIS_PORT:6379}"
+  jpa:
+    show-sql: ${SPRING_JPA_SHOW_SQL:true}
+    hibernate:
+      ddl-auto: "${SPRING_JPA_HIBERNATE_DDL_AUTO:update}"
+    properties:
+      hibernate:
+        dialect: "${SPRING_JPA_HIBERNATE_DIALECT:org.hibernate.dialect.PostgreSQLDialect}"
+      jdbc:
+        time_zone: "${SPRING_JPA_PROPERTIES_HIBERNATE_JDBC_TIME_ZONE:UTC}"
+
+server:
+  port: ${SERVER_PORT:8083}
+
+admin:
+  cors-allowed-origins:
+    - "${APP_PUBLIC_UI_ORIGIN:http://localhost:5173}"
+    - "${APP_ADMIN_UI_ORIGIN:http://localhost:5174}"
+  cookie:
+    public-cookie-name: "${PUBLIC_ACCESS_COOKIE_NAME:public_access_session}"
+    admin-cookie-name: "${ADMIN_SESSION_COOKIE_NAME:admin_session}"
+    secure: ${COOKIE_SECURE:false}
+    same-site: "${COOKIE_SAME_SITE:Lax}"
+  invite:
+    ttl-hours: ${INVITE_TTL_HOURS:24}
+    public-session-ttl-seconds: ${PUBLIC_ACCESS_SESSION_TTL_SECONDS:86400}
+  auth:
+    username: "${ADMIN_USERNAME:admin}"
+    password: "${ADMIN_PASSWORD:admin}"
+    session-ttl-seconds: ${ADMIN_SESSION_TTL_SECONDS:28800}
+  email:
+    resend-api-key: "${RESEND_API_KEY:}"
+    resend-base-url: "${RESEND_BASE_URL:https://api.resend.com}"
+    from-email: "${RESEND_FROM_EMAIL:}"
+    admin-notification-email: "${ADMIN_NOTIFICATION_EMAIL:}"
+  inventory:
+    base-url: "${INVENTORY_SERVICE_BASE_URL:http://localhost:8081}"
+    internal-secret: "${ADMIN_SERVICE_INTERNAL_SECRET:change-me}"
+  managed-products:
+    - product-id: "${ADMIN_MANAGED_PRODUCT_ID:6ba7b810-9dad-11d1-80b4-00c04fd430c8}"
+      name: "${ADMIN_MANAGED_PRODUCT_NAME:Demo Product}"
+      description: "${ADMIN_MANAGED_PRODUCT_DESCRIPTION:Shared stock pool for the public simulation}"
+      default-top-up-quantity: ${ADMIN_MANAGED_PRODUCT_TOP_UP:100}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus,health,metrics
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: admin-service
