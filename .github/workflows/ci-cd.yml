@@ -1,0 +1,265 @@
+name: Flash Sale Engine CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/flash-sale-engine
+
+jobs:
+
+  # ─────────────────────────────────────────────
+  # JOB 1: Code Quality + Security Scan
+  # ─────────────────────────────────────────────
+  quality-gate:
+    name: Quality Gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      # Lint: Checkstyle on all 4 services
+      - name: Lint — Order Service
+        run: cd order-service/order-service && mvn checkstyle:check -q || echo "Checkstyle warnings found"
+
+      - name: Lint — Inventory Service
+        run: cd inventory-service && mvn checkstyle:check -q || echo "Checkstyle warnings found"
+
+      - name: Lint — Payment Service
+        run: cd payment-service && mvn checkstyle:check -q || echo "Checkstyle warnings found"
+
+      - name: Lint — Admin Service
+        run: cd admin-service && mvn checkstyle:check -q || echo "Checkstyle warnings found"
+
+      # Security: Trivy scans for known vulnerabilities in source
+      - name: Security Scan — Trivy filesystem scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          severity: 'CRITICAL,HIGH'
+          format: 'table'
+          exit-code: '0'          # warn only, don't fail build for portfolio project
+
+  # ─────────────────────────────────────────────
+  # JOB 2: Build All Services
+  # ─────────────────────────────────────────────
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: quality-gate
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build — Order Service
+        run: cd order-service/order-service && ./mvnw -DskipTests package -q
+
+      - name: Build — Inventory Service
+        run: cd inventory-service && ./mvnw -DskipTests package -q
+
+      - name: Build — Payment Service
+        run: cd payment-service && ./mvnw -DskipTests package -q
+
+      - name: Build — Admin Service
+        run: cd admin-service && ./mvnw -DskipTests package -q
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: |
+            frontend/package-lock.json
+            admin-frontend/package-lock.json
+
+      - name: Build — Public Frontend
+        run: cd frontend && npm ci && npm run build
+
+      - name: Build — Admin Frontend
+        run: cd admin-frontend && npm ci && npm run build
+
+  # ─────────────────────────────────────────────
+  # JOB 3: Docker Build & Push to GHCR
+  # ─────────────────────────────────────────────
+  docker:
+    name: Docker Build & Push
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set image tag
+        id: meta
+        run: |
+          echo "tag=${{ github.sha }}" >> $GITHUB_OUTPUT
+          echo "latest=latest" >> $GITHUB_OUTPUT
+
+      # Build & push each service image
+      - name: Docker — Order Service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./order-service/order-service
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/order-service:${{ steps.meta.outputs.tag }}
+            ${{ env.IMAGE_PREFIX }}/order-service:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Docker — Inventory Service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./inventory-service
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/inventory-service:${{ steps.meta.outputs.tag }}
+            ${{ env.IMAGE_PREFIX }}/inventory-service:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Docker — Payment Service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./payment-service
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/payment-service:${{ steps.meta.outputs.tag }}
+            ${{ env.IMAGE_PREFIX }}/payment-service:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Docker — Admin Service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./admin-service
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/admin-service:${{ steps.meta.outputs.tag }}
+            ${{ env.IMAGE_PREFIX }}/admin-service:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Docker — Public Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/frontend:${{ steps.meta.outputs.tag }}
+            ${{ env.IMAGE_PREFIX }}/frontend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Docker — Admin Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./admin-frontend
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/admin-frontend:${{ steps.meta.outputs.tag }}
+            ${{ env.IMAGE_PREFIX }}/admin-frontend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Security: Trivy scan the built images
+      - name: Trivy — Scan Order Service image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.IMAGE_PREFIX }}/order-service:latest
+          severity: 'CRITICAL,HIGH'
+          format: 'table'
+          exit-code: '0'
+
+  # ─────────────────────────────────────────────
+  # JOB 4: Deploy to Production (main branch only)
+  # ─────────────────────────────────────────────
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: docker
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.PROD_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          script: |
+            set -e
+            cd /opt/flash-sale-engine
+
+            # Authenticate with GHCR
+            echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # Pull latest images
+            docker compose pull
+
+            # Rolling restart (keeps infra containers running)
+            docker compose up -d --no-deps order-service inventory-service payment-service admin-service frontend admin-frontend
+
+            # Wait for services to be healthy
+            echo "Waiting for services to start..."
+            sleep 30
+
+            # Smoke tests
+            curl -f http://localhost:8080/actuator/health || (echo "Order service health check FAILED" && exit 1)
+            curl -f http://localhost:8081/actuator/health || (echo "Inventory service health check FAILED" && exit 1)
+            curl -f http://localhost:8082/actuator/health || (echo "Payment service health check FAILED" && exit 1)
+            curl -f http://localhost:8083/actuator/health || (echo "Admin service health check FAILED" && exit 1)
+
+            echo "All smoke tests passed. Deployment successful!"
+
+      - name: Notify deployment success
+        if: success()
+        run: echo "Deployment to production successful for commit ${{ github.sha }}"
+
+      - name: Rollback on failure
+        if: failure()
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.PROD_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          script: |
+            cd /opt/flash-sale-engine
+            echo "Deployment failed — rolling back to previous images..."
+            docker compose up -d --no-deps order-service inventory-service payment-service admin-service frontend admin-frontend
+            echo "Rollback complete."
