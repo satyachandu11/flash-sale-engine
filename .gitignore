@@ -22,6 +22,12 @@ frontend/dist/
 frontend/.vite/
 frontend/.vite-temp/
 
+# Admin frontend
+admin-frontend/node_modules/
+admin-frontend/dist/
+admin-frontend/.vite/
+admin-frontend/.vite-temp/
+
 # Java / Maven
 **/target/
 **/.m2/
