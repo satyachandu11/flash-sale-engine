@@ -356,7 +356,7 @@ export default function App({ sessionName, sessionEmail, sessionExpiresAt, onLog
   const [liveEvents, setLiveEvents] = useState([]);
   const [runStatus, setRunStatus] = useState("idle");
   const [selectedOrderKey, setSelectedOrderKey] = useState(null);
-  const [innerTab, setInnerTab] = useState("topology"); // "inventory" | "topology" | "mission"
+
   const [sessionSeconds, setSessionSeconds] = useState(0);
   const [banner, setBanner] = useState("");
   const [serviceHealth, setServiceHealth] = useState({
@@ -923,9 +923,9 @@ export default function App({ sessionName, sessionEmail, sessionExpiresAt, onLog
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55 }}
         >
-          <div className="min-w-0 shrink-0">
+          <div className="w-52 shrink-0">
             <p className="hud-label">FlashSale Engine Simulation</p>
-            <h1 className="mt-1 font-serif text-4xl leading-none text-white text-glow">Spaceship Cockpit</h1>
+            <h1 className="mt-1 font-serif text-4xl leading-none text-white text-glow">Cockpit</h1>
           </div>
 
           <div className="flex min-w-0 flex-1 items-center justify-end gap-3">
@@ -1126,38 +1126,9 @@ export default function App({ sessionName, sessionEmail, sessionExpiresAt, onLog
               </div>
             </div>
 
-            {/* Tab bar */}
-            <div className="mt-3 flex gap-2">
-              {[
-                { id: "inventory", label: "Inventory Gauge" },
-                { id: "topology", label: "System Topology" },
-                { id: "mission", label: "Mission + Orders" }
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setInnerTab(tab.id)}
-                  className={`rounded-full border px-4 py-1.5 text-[11px] uppercase tracking-[0.22em] transition ${
-                    innerTab === tab.id
-                      ? "border-cyan-300/50 bg-cyan-400/20 text-cyan-100"
-                      : "border-white/10 bg-white/5 text-slate-400 hover:border-white/20 hover:text-slate-200"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
 
-            {/* Tab panels — each fills remaining Battle Glass height */}
-            <div className="mt-3 min-h-0 flex-1 overflow-hidden">
-
-              {innerTab === "inventory" && (
-                <div className="h-full overflow-y-auto pr-1">
-                  <StockGauge runStatus={runMeta.label} snapshot={inventorySnapshot} />
-                </div>
-              )}
-
-              {innerTab === "topology" && (
+            {/* V2: Inner panels (Inventory Gauge, System Topology, Mission + Orders) — see Todo.md */}
+            {false && (
                 <div className="glass-panel relative flex h-full flex-col overflow-hidden p-5">
                 <motion.div
                   animate={{ x: ["-10%", "100%"] }}
@@ -1232,7 +1203,7 @@ export default function App({ sessionName, sessionEmail, sessionExpiresAt, onLog
               </div>
             )}
 
-            {innerTab === "mission" && (
+            {false && (
               <div className="flex h-full flex-col gap-3 overflow-y-auto pr-1">
                 <div className="glass-panel p-4">
                   {(runStatus === "complete" || runStatus === "depleted") ? (
@@ -1306,8 +1277,6 @@ export default function App({ sessionName, sessionEmail, sessionExpiresAt, onLog
                 </div>
               </div>
             )}
-
-            </div>{/* closes tab panels container */}
           </section>
 
           <section className="glass-panel col-start-2 row-start-2 grid min-h-0 grid-cols-[minmax(0,0.95fr)_minmax(0,0.95fr)_minmax(0,1.1fr)] gap-4 overflow-hidden p-4">

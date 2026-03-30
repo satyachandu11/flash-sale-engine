@@ -88,7 +88,7 @@
 
   .cockpit-grid {
     grid-template-columns: 320px minmax(0, 1fr) 392px;
-    grid-template-rows: minmax(0, 1fr) 220px;
+    grid-template-rows: auto minmax(0, 1fr);
   }
 
   .cockpit-grid > * {
@@ -103,6 +103,6 @@
 @media (max-width: 1680px) {
   .cockpit-grid {
     grid-template-columns: 300px minmax(0, 1fr) 360px;
-    grid-template-rows: minmax(0, 1fr) 200px;
+    grid-template-rows: auto minmax(0, 1fr);
   }
 }
