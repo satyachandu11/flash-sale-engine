@@ -626,3 +626,86 @@ accurate live stats.
 | Circuit breaker | `GET /payment/config` | payment-service :8082 | Every 2.5s |
 | Failure rate slider | `POST /payment/config/failure-rate` | payment-service :8082 | On slider change |
 | Service health | `GET /actuator/health` (×3) | All services | Every 5s |
+
+---
+
+## 12. Frontend — Battle Glass Tab Switcher
+
+### Problem
+
+The Battle Glass center column contains three information panels stacked in a 3-column grid:
+- **Inventory Gauge** — circular SVG stock gauge + stats
+- **System Topology** — animated token flow canvas + stage counters
+- **Mission + Orders** — mission snapshot / end-of-run summary + sampled SSE cards
+
+On standard viewport heights (800–1080px), after accounting for the header bar (~90px),
+narrative bar (~30px), grid gaps (~32px), and footer (~45px), the Battle Glass section
+receives only ~350–450px of height. The header + 4 KPI cards consume ~210px of that,
+leaving ~140–240px for the 3-column inner grid. At that height the panels collapse and only
+their HUD label headers ("INVENTORY GAUGE", "SYSTEM", "MISSION SNAPSHOT") were visible.
+
+### Solution: Tab Switcher
+
+Replaced the fixed 3-column inner grid with a **tab switcher** inside the Battle Glass:
+
+```
+┌────────────────────────────────────────────────────┐
+│  BATTLE GLASS                                       │
+│  Live saga flight path                              │
+│  ┌──────────┬──────────┬──────────┬──────────┐     │
+│  │ ORDERS   │ IN       │ SUCCESS  │ FAILURE  │     │
+│  │ FIRED    │ FLIGHT   │          │          │     │  ← 4 KPI cards always visible
+│  └──────────┴──────────┴──────────┴──────────┘     │
+│                                                     │
+│  [Inventory Gauge] [System Topology] [Mission+Orders]│ ← tab bar
+│  ┌───────────────────────────────────────────────┐  │
+│  │  Active tab panel fills all remaining height  │  │
+│  └───────────────────────────────────────────────┘  │
+└────────────────────────────────────────────────────┘
+```
+
+**Key implementation details:**
+
+1. **State**: `const [innerTab, setInnerTab] = useState("topology")` — defaults to Topology
+   (the most important panel during an active run — shows animated token flow).
+
+2. **Tab bar**: 3 pill buttons styled as cockpit chips. Active tab: cyan border + background.
+   Inactive: white/10 border, slate text, hover highlights.
+
+3. **Tab panels container**: `<div className="mt-3 min-h-0 flex-1 overflow-hidden">` — takes
+   all remaining Battle Glass height via `flex-1`.
+
+4. **Inventory tab**: `h-full overflow-y-auto` wrapper — StockGauge renders naturally,
+   scrolls if viewport is very small.
+
+5. **Topology tab**: `glass-panel relative flex h-full flex-col overflow-hidden` — the panel
+   fills the exact available height. Contains: scan animation, header + throughput counter,
+   h-44 token canvas with SOLD OUT overlay, 4 stage counters.
+
+6. **Mission tab**: `flex h-full flex-col gap-3 overflow-y-auto` — scrollable column with
+   Mission Snapshot card (or Run Complete summary) + Sampled Orders card.
+
+### Why This Works Better Than Scrolling
+
+Scrolling a 3-column grid creates poor UX in a cockpit dashboard — three side-by-side panels
+with different natural heights result in inconsistent scroll positions and a cramped feel.
+The tab switcher gives each panel the full Battle Glass height, making every panel readable
+on any screen size without any compromise.
+
+### What Changed
+
+**`frontend/src/SimulatorApp.jsx`**
+- Added `innerTab` state (line ~359)
+- Replaced `<div className="relative mt-3 grid min-h-0 flex-1 ...">` with:
+  - Tab bar (3 pill buttons)
+  - Tab panels container (`flex-1 overflow-hidden`)
+  - 3 conditional panels: `{innerTab === "inventory" && ...}` etc.
+- Default tab: `"topology"` (most relevant during active run)
+- Mission tab auto-switches content: shows Mission Snapshot while running,
+  Run Complete summary (tickets sold / rejected / success rate / duration) when done
+
+### Time Display
+
+All timestamps in the UI already use `{ hour: 'numeric', minute: '2-digit' }` format which
+omits seconds — showing e.g. `4:31 PM` not `4:31:00 PM`. This was already correct in the
+health card timestamps (ObservabilityRail), mission event feed, and order feed cards.
