@@ -222,6 +222,7 @@ jobs:
           host: ${{ secrets.PROD_HOST }}
           username: ${{ secrets.PROD_USER }}
           key: ${{ secrets.PROD_SSH_KEY }}
+          command_timeout: 30m
           script: |
             set -e
             cd /opt/flash-sale-engine
@@ -236,16 +237,21 @@ jobs:
             docker compose -f docker-compose.prod.yml up -d postgres zookeeper kafka redis
 
             # Wait for infra to be ready
-            sleep 15
+            sleep 20
 
             # Rolling restart of app services
             docker compose -f docker-compose.prod.yml up -d --no-deps order-service inventory-service payment-service admin-service frontend admin-frontend prometheus grafana nginx
 
-            # Wait for services to be healthy
+            # Wait for Spring Boot services to finish JVM startup
             echo "Waiting for services to start..."
-            sleep 45
+            sleep 60
 
-            # Smoke tests
+            # Smoke tests with retry (retry up to 5 times, 15s apart)
+            for i in 1 2 3 4 5; do
+              curl -sf http://localhost:8080/actuator/health && break
+              echo "Order service not ready yet, retrying ($i/5)..."
+              sleep 15
+            done
             curl -f http://localhost:8080/actuator/health || (echo "Order service health check FAILED" && exit 1)
             curl -f http://localhost:8081/actuator/health || (echo "Inventory service health check FAILED" && exit 1)
             curl -f http://localhost:8082/actuator/health || (echo "Payment service health check FAILED" && exit 1)
