@@ -230,14 +230,20 @@ jobs:
             echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
             # Pull latest images
-            docker compose pull
+            docker compose -f docker-compose.prod.yml pull
 
-            # Rolling restart (keeps infra containers running)
-            docker compose up -d --no-deps order-service inventory-service payment-service admin-service frontend admin-frontend
+            # Start infra first (postgres, kafka, redis) if not already running
+            docker compose -f docker-compose.prod.yml up -d postgres zookeeper kafka redis
+
+            # Wait for infra to be ready
+            sleep 15
+
+            # Rolling restart of app services
+            docker compose -f docker-compose.prod.yml up -d --no-deps order-service inventory-service payment-service admin-service frontend admin-frontend prometheus grafana nginx
 
             # Wait for services to be healthy
             echo "Waiting for services to start..."
-            sleep 30
+            sleep 45
 
             # Smoke tests
             curl -f http://localhost:8080/actuator/health || (echo "Order service health check FAILED" && exit 1)
@@ -261,5 +267,5 @@ jobs:
           script: |
             cd /opt/flash-sale-engine
             echo "Deployment failed — rolling back to previous images..."
-            docker compose up -d --no-deps order-service inventory-service payment-service admin-service frontend admin-frontend
+            docker compose -f docker-compose.prod.yml up -d --no-deps order-service inventory-service payment-service admin-service frontend admin-frontend
             echo "Rollback complete."
