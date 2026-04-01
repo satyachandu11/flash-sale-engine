@@ -26,6 +26,8 @@ services:
     restart: unless-stopped
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
+      KAFKA_HEAP_OPTS: "-Xmx256m -Xms128m"
+    mem_limit: 384m
     networks:
       - flashsale-net
 
@@ -44,6 +46,8 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_LOG_RETENTION_HOURS: 48
+      KAFKA_HEAP_OPTS: "-Xmx512m -Xms256m"
+    mem_limit: 768m
     networks:
       - flashsale-net
 
@@ -76,6 +80,8 @@ services:
       APP_ADMIN_UI_ORIGIN: ${ADMIN_FRONTEND_URL}
       RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS:-10}
       RATE_LIMIT_WINDOW_SECONDS: ${RATE_LIMIT_WINDOW_SECONDS:-60}
+      JAVA_OPTS: "-Xmx256m -Xms128m"
+    mem_limit: 384m
     depends_on:
       - postgres
       - kafka
@@ -98,6 +104,8 @@ services:
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
       ADMIN_SERVICE_INTERNAL_SECRET: ${ADMIN_SERVICE_INTERNAL_SECRET}
+      JAVA_OPTS: "-Xmx256m -Xms128m"
+    mem_limit: 384m
     depends_on:
       - postgres
       - kafka
@@ -117,6 +125,8 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       PAYMENT_GATEWAY_FAILURE_RATE: ${PAYMENT_GATEWAY_FAILURE_RATE:-0.2}
+      JAVA_OPTS: "-Xmx256m -Xms128m"
+    mem_limit: 384m
     depends_on:
       - postgres
       - kafka
@@ -152,6 +162,8 @@ services:
       APP_CORS_ALLOWED_ORIGIN: ${FRONTEND_URL}
       APP_PUBLIC_UI_ORIGIN: ${FRONTEND_URL}
       APP_ADMIN_UI_ORIGIN: ${ADMIN_FRONTEND_URL}
+      JAVA_OPTS: "-Xmx256m -Xms128m"
+    mem_limit: 384m
     depends_on:
       - postgres
       - redis
