@@ -6,10 +6,10 @@ RUN npm ci
 
 COPY . .
 
-ARG VITE_ORDER_API_BASE_URL=http://localhost:8080
-ARG VITE_INVENTORY_API_BASE_URL=http://localhost:8081
-ARG VITE_PAYMENT_API_BASE_URL=http://localhost:8082
-ARG VITE_GRAFANA_URL=http://localhost:3000
+ARG VITE_ORDER_API_BASE_URL=https://order.fsengine.dev
+ARG VITE_INVENTORY_API_BASE_URL=https://inventory.fsengine.dev
+ARG VITE_PAYMENT_API_BASE_URL=https://payment.fsengine.dev
+ARG VITE_GRAFANA_URL=https://grafana.fsengine.dev
 
 ENV VITE_ORDER_API_BASE_URL=${VITE_ORDER_API_BASE_URL}
 ENV VITE_INVENTORY_API_BASE_URL=${VITE_INVENTORY_API_BASE_URL}
