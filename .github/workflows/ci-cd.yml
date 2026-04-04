@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main ]
 
+concurrency:
+  group: production-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   REGISTRY: ghcr.io
   IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/flash-sale-engine
@@ -229,23 +233,49 @@ jobs:
           key: ${{ secrets.PROD_SSH_KEY }}
           command_timeout: 30m
           script: |
-            set -e
+            set -euo pipefail
+            if [ ! -d /opt/flash-sale-engine/.git ]; then
+              rm -rf /opt/flash-sale-engine
+              git clone https://github.com/${{ github.repository }}.git /opt/flash-sale-engine
+            fi
+
             cd /opt/flash-sale-engine
+
+            # Always sync the VM checkout to the exact commit being deployed so compose/nginx/scripts stay current.
+            git fetch origin main
+            git checkout main
+            git reset --hard ${{ github.sha }}
+
+            # Track the exact deployed image tag so compose never races on mutable "latest".
+            PREVIOUS_IMAGE_TAG=""
+            if [ -f .deploy.env ]; then
+              PREVIOUS_IMAGE_TAG=$(awk -F= '/^IMAGE_TAG=/{print $2}' .deploy.env || true)
+              cp .deploy.env .deploy.env.previous
+            fi
+            printf "IMAGE_TAG=%s\n" "${{ github.sha }}" > .deploy.env
+
+            if [ ! -f .env ]; then
+              echo "Missing /opt/flash-sale-engine/.env on production host"
+              exit 1
+            fi
 
             # Authenticate with GHCR
             echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
+            # Validate resolved compose before touching running containers.
+            docker compose --env-file .env --env-file .deploy.env -f docker-compose.prod.yml config -q
+
             # Pull latest images
-            docker compose -f docker-compose.prod.yml pull
+            docker compose --env-file .env --env-file .deploy.env -f docker-compose.prod.yml pull
 
             # Start infra first (postgres, kafka, redis) if not already running
-            docker compose -f docker-compose.prod.yml up -d postgres zookeeper kafka redis
+            docker compose --env-file .env --env-file .deploy.env -f docker-compose.prod.yml up -d postgres zookeeper kafka redis
 
             # Wait for infra to be ready
             sleep 20
 
             # Rolling restart of app services
-            docker compose -f docker-compose.prod.yml up -d --no-deps order-service inventory-service payment-service admin-service frontend admin-frontend prometheus grafana nginx
+            docker compose --env-file .env --env-file .deploy.env -f docker-compose.prod.yml up -d --no-deps order-service inventory-service payment-service admin-service frontend admin-frontend prometheus grafana
 
             # Wait for Spring Boot services to finish JVM startup
             echo "Waiting for services to start..."
@@ -261,6 +291,45 @@ jobs:
             curl -f http://localhost:8081/actuator/health || (echo "Inventory service health check FAILED" && exit 1)
             curl -f http://localhost:8082/actuator/health || (echo "Payment service health check FAILED" && exit 1)
             curl -f http://localhost:8083/actuator/health || (echo "Admin service health check FAILED" && exit 1)
+
+            # Restart nginx after upstream containers have been recreated so it picks up fresh container IPs.
+            docker compose --env-file .env --env-file .deploy.env -f docker-compose.prod.yml restart nginx
+            sleep 10
+
+            # Public smoke tests through nginx/domain routing with retries for transient startup windows.
+            for url in \
+              https://fsengine.dev/ \
+              https://order.fsengine.dev/actuator/health \
+              https://inventory.fsengine.dev/actuator/health \
+              https://payment.fsengine.dev/actuator/health
+            do
+              ok=""
+              for i in 1 2 3 4 5; do
+                if curl -kfsS "$url" >/dev/null; then
+                  ok="yes"
+                  break
+                fi
+                echo "Public check not ready for $url ($i/5)..."
+                sleep 5
+              done
+              [ -n "$ok" ] || (echo "Public endpoint check FAILED for $url" && exit 1)
+            done
+
+            # Verify browser-style GET requests from the public frontend origin are accepted by CORS.
+            for url in \
+              https://order.fsengine.dev/actuator/health \
+              https://inventory.fsengine.dev/actuator/health \
+              https://payment.fsengine.dev/actuator/health
+            do
+              headers=$(mktemp)
+              if ! curl -kfsS -D "$headers" -o /dev/null -H "Origin: https://fsengine.dev" "$url"; then
+                rm -f "$headers"
+                echo "CORS GET check FAILED for $url"
+                exit 1
+              fi
+              grep -Fi "Access-Control-Allow-Origin: https://fsengine.dev" "$headers" >/dev/null || (rm -f "$headers" && echo "Missing CORS allow-origin header for $url" && exit 1)
+              rm -f "$headers"
+            done
 
             echo "All smoke tests passed. Deployment successful!"
 
@@ -278,5 +347,11 @@ jobs:
           script: |
             cd /opt/flash-sale-engine
             echo "Deployment failed — rolling back to previous images..."
-            docker compose -f docker-compose.prod.yml up -d --no-deps order-service inventory-service payment-service admin-service frontend admin-frontend
+            if [ ! -f .deploy.env.previous ]; then
+              echo "No previous deployment metadata found; cannot roll back automatically."
+              exit 1
+            fi
+            cp .deploy.env.previous .deploy.env
+            docker compose --env-file .env --env-file .deploy.env -f docker-compose.prod.yml up -d --no-deps order-service inventory-service payment-service admin-service frontend admin-frontend
+            docker compose --env-file .env --env-file .deploy.env -f docker-compose.prod.yml restart nginx
             echo "Rollback complete."

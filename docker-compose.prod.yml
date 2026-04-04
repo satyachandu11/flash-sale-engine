@@ -62,7 +62,7 @@ services:
   # ─── Application Services ──────────────────────────────────────────────────
 
   order-service:
-    image: ghcr.io/${GITHUB_REPO_OWNER}/flash-sale-engine/order-service:latest
+    image: ghcr.io/${GITHUB_REPO_OWNER}/flash-sale-engine/order-service:${IMAGE_TAG:-latest}
     container_name: flashsale-order
     restart: unless-stopped
     ports:
@@ -90,7 +90,7 @@ services:
       - flashsale-net
 
   inventory-service:
-    image: ghcr.io/${GITHUB_REPO_OWNER}/flash-sale-engine/inventory-service:latest
+    image: ghcr.io/${GITHUB_REPO_OWNER}/flash-sale-engine/inventory-service:${IMAGE_TAG:-latest}
     container_name: flashsale-inventory
     restart: unless-stopped
     ports:
@@ -115,7 +115,7 @@ services:
       - flashsale-net
 
   payment-service:
-    image: ghcr.io/${GITHUB_REPO_OWNER}/flash-sale-engine/payment-service:latest
+    image: ghcr.io/${GITHUB_REPO_OWNER}/flash-sale-engine/payment-service:${IMAGE_TAG:-latest}
     container_name: flashsale-payment
     restart: unless-stopped
     ports:
@@ -136,7 +136,7 @@ services:
       - flashsale-net
 
   admin-service:
-    image: ghcr.io/${GITHUB_REPO_OWNER}/flash-sale-engine/admin-service:latest
+    image: ghcr.io/${GITHUB_REPO_OWNER}/flash-sale-engine/admin-service:${IMAGE_TAG:-latest}
     container_name: flashsale-admin
     restart: unless-stopped
     ports:
@@ -176,7 +176,7 @@ services:
   # ─── Frontends ─────────────────────────────────────────────────────────────
 
   frontend:
-    image: ghcr.io/${GITHUB_REPO_OWNER}/flash-sale-engine/frontend:latest
+    image: ghcr.io/${GITHUB_REPO_OWNER}/flash-sale-engine/frontend:${IMAGE_TAG:-latest}
     container_name: flashsale-frontend
     restart: unless-stopped
     ports:
@@ -185,7 +185,7 @@ services:
       - flashsale-net
 
   admin-frontend:
-    image: ghcr.io/${GITHUB_REPO_OWNER}/flash-sale-engine/admin-frontend:latest
+    image: ghcr.io/${GITHUB_REPO_OWNER}/flash-sale-engine/admin-frontend:${IMAGE_TAG:-latest}
     container_name: flashsale-admin-frontend
     restart: unless-stopped
     ports:
