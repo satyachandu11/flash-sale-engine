@@ -9,6 +9,8 @@ const EMPTY_REQUEST_FORM = {
   email: ""
 };
 
+const MOBILE_VIEWPORT_QUERY = "(max-width: 1023px), (hover: none) and (pointer: coarse) and (max-width: 1280px)";
+
 function currentPath() {
   return window.location.pathname === "/simulator" ? "/simulator" : "/";
 }
@@ -53,6 +55,153 @@ function formatExpiry(expiresAt) {
     hour: "numeric",
     minute: "2-digit"
   });
+}
+
+function isMobileViewport() {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+    return false;
+  }
+  return window.matchMedia(MOBILE_VIEWPORT_QUERY).matches;
+}
+
+function MobileRelayScreen({ authenticated, sessionName, sessionExpiresAt }) {
+  const [copyState, setCopyState] = useState("idle");
+
+  const handleCopyLink = useEffectEvent(async () => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(window.location.href);
+        setCopyState("copied");
+        window.setTimeout(() => setCopyState("idle"), 2000);
+        return;
+      }
+      setCopyState("unsupported");
+    } catch (_error) {
+      setCopyState("unsupported");
+    }
+  });
+
+  return (
+    <div className="mobile-relay-shell relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(103,232,249,0.22),_transparent_34%),radial-gradient(circle_at_bottom,_rgba(74,222,128,0.16),_transparent_32%),linear-gradient(180deg,_#020712_0%,_#07111d_55%,_#03070d_100%)] px-5 py-6 text-slate-100">
+      <div className="starfield absolute inset-0 opacity-80" />
+      <div className="mobile-relay-orbit mobile-relay-orbit-one" />
+      <div className="mobile-relay-orbit mobile-relay-orbit-two" />
+
+      <div className="relative mx-auto flex min-h-[calc(100vh-3rem)] max-w-md flex-col justify-between">
+        <div>
+          <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-[11px] uppercase tracking-[0.28em] text-cyan-50">
+            <span className="h-2 w-2 rounded-full bg-cyan-300 shadow-[0_0_18px_rgba(103,232,249,0.9)]" />
+            Mobile relay
+          </div>
+
+          <section className="mt-6 rounded-[2rem] border border-white/10 bg-slate-950/45 p-5 shadow-cockpit backdrop-blur-xl">
+            <p className="hud-label">Flash Sale Engine</p>
+            <h1 className="mt-3 font-serif text-5xl leading-[0.92] text-white">
+              This cockpit wants a bigger windshield.
+            </h1>
+            <p className="mt-4 text-sm leading-6 text-slate-300">
+              You can open the project from your phone, but the real experience lives on desktop or laptop where the dashboard can show the live saga, event flow, service health, inventory pressure, and backend observability all at once.
+            </p>
+
+            <div className="mt-5 grid gap-3">
+              <div className="rounded-[1.6rem] border border-cyan-300/15 bg-cyan-300/10 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="hud-label">Why desktop</p>
+                    <div className="mt-1 text-lg font-semibold text-white">Too much motion for a tiny screen</div>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-right">
+                    <div className="text-[10px] uppercase tracking-[0.22em] text-slate-400">Panels</div>
+                    <div className="mt-1 text-lg font-semibold text-white">3 zones</div>
+                  </div>
+                </div>
+                <div className="mt-4 grid grid-cols-3 gap-2 text-xs text-slate-200">
+                  <div className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2">
+                    <div className="hud-label">Live feed</div>
+                    <div className="mt-1 font-semibold text-white">Orders</div>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2">
+                    <div className="hud-label">Pulse</div>
+                    <div className="mt-1 font-semibold text-white">Metrics</div>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2">
+                    <div className="hud-label">Rail</div>
+                    <div className="mt-1 font-semibold text-white">Grafana</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-[1.6rem] border border-white/10 bg-white/5 p-4">
+                <p className="hud-label">Mission preview</p>
+                <div className="mt-3 space-y-3">
+                  <div className="flex items-center justify-between rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-3 py-3">
+                    <div>
+                      <div className="text-sm font-semibold text-white">Inventory drain</div>
+                      <div className="text-xs text-slate-300">Watch stock disappear in real time.</div>
+                    </div>
+                    <div className="text-lg font-semibold text-emerald-100">100 to 0</div>
+                  </div>
+                  <div className="flex items-center justify-between rounded-2xl border border-amber-400/20 bg-amber-500/10 px-3 py-3">
+                    <div>
+                      <div className="text-sm font-semibold text-white">Circuit breaker</div>
+                      <div className="text-xs text-slate-300">See payment failures trip and recover.</div>
+                    </div>
+                    <div className="text-lg font-semibold text-amber-100">LIVE</div>
+                  </div>
+                  <div className="flex items-center justify-between rounded-2xl border border-cyan-400/20 bg-cyan-500/10 px-3 py-3">
+                    <div>
+                      <div className="text-sm font-semibold text-white">Saga trail</div>
+                      <div className="text-xs text-slate-300">Order, inventory, payment, resolution.</div>
+                    </div>
+                    <div className="text-lg font-semibold text-cyan-100">4 hops</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <section className="mt-6 rounded-[2rem] border border-white/10 bg-slate-950/55 p-5 shadow-cockpit backdrop-blur-xl">
+          <div className="mobile-relay-device mx-auto mb-5">
+            <div className="mobile-relay-device-screen">
+              <div className="mobile-relay-device-grid">
+                <span />
+                <span />
+                <span />
+                <span />
+                <span />
+                <span />
+              </div>
+            </div>
+          </div>
+
+          <p className="hud-label">Best next move</p>
+          <h2 className="mt-2 text-2xl font-semibold text-white">
+            Open this same link on a desktop or laptop.
+          </h2>
+          <p className="mt-3 text-sm leading-6 text-slate-300">
+            {authenticated
+              ? `${sessionName || "Your"} session is already active${sessionExpiresAt ? ` until ${formatExpiry(sessionExpiresAt)}` : ""}.`
+              : "The simulator and access flow are tuned for a larger screen so the backend story can breathe."}
+          </p>
+
+          <button
+            className="mt-5 inline-flex w-full items-center justify-center rounded-full border border-cyan-300/30 bg-cyan-300/12 px-5 py-3 text-sm font-semibold uppercase tracking-[0.22em] text-cyan-50 transition hover:bg-cyan-300/18"
+            onClick={handleCopyLink}
+            type="button"
+          >
+            {copyState === "copied" ? "Link copied" : "Copy this link for desktop"}
+          </button>
+
+          <p className="mt-3 text-center text-xs text-slate-400">
+            {copyState === "unsupported"
+              ? "Copy is blocked on this browser, but the current URL will work on desktop."
+              : "Tip: send it to yourself and open it on a wider screen."}
+          </p>
+        </section>
+      </div>
+    </div>
+  );
 }
 
 function LoadingScreen({ title, detail }) {
@@ -184,6 +333,7 @@ function AccessGate({
 }
 
 export default function App() {
+  const [mobileViewport, setMobileViewport] = useState(isMobileViewport);
   const [path, setPath] = useState(currentPath);
   const [sessionState, setSessionState] = useState({
     status: ACCESS_GATE_ENABLED ? "checking" : "authenticated",
@@ -226,6 +376,24 @@ export default function App() {
     const handlePopState = () => setPath(currentPath());
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+      return undefined;
+    }
+
+    const mediaQuery = window.matchMedia(MOBILE_VIEWPORT_QUERY);
+    const syncViewport = () => setMobileViewport(mediaQuery.matches);
+
+    syncViewport();
+    mediaQuery.addEventListener("change", syncViewport);
+    window.addEventListener("resize", syncViewport);
+
+    return () => {
+      mediaQuery.removeEventListener("change", syncViewport);
+      window.removeEventListener("resize", syncViewport);
+    };
   }, []);
 
   useEffect(() => {
@@ -305,6 +473,16 @@ export default function App() {
 
   if (sessionState.status === "checking") {
     return <LoadingScreen detail="Checking your invite session and restoring access if the browser was refreshed." title="Restoring access" />;
+  }
+
+  if (mobileViewport) {
+    return (
+      <MobileRelayScreen
+        authenticated={sessionState.status === "authenticated"}
+        sessionExpiresAt={sessionState.data?.expiresAt}
+        sessionName={sessionState.data?.name}
+      />
+    );
   }
 
   if (path === "/simulator" && sessionState.status === "authenticated") {
