@@ -6,6 +6,8 @@ It draws from the actual project history in:
 - `ARCHITECTURE.md`
 - `CHANGES.md`
 - `Flash_Sale_Engine_Resume.md`
+- `AdminPLAN.md`
+- `FrontendPlan.md`
 - the production deployment/debugging work done in this repo
 
 The goal is to turn one project into a series of real engineering stories instead of one generic showcase post.
@@ -21,19 +23,24 @@ This project is strong enough for a multi-post series because it contains:
 - CI/CD and deployment engineering
 - real production-only bugs
 - debugging lessons that show engineering maturity
+- product-thinking decisions around access, UX, and operational truth
 
 Recommended posting flow:
 
 1. Building the flash-sale engine
 2. Designing saga + outbox + Redis + circuit breaker
-3. Deploying to production on Azure
-4. Pipeline said success, site still failed
-5. Nginx stale upstream/container IP issue
-6. CORS bug in production only
-7. Kafka localhost bug that caused 0 tickets sold
-8. Hardening CI/CD with public smoke tests and rollback
+3. Real-time order tracking with SSE
+4. Why the frontend had to become backend-driven
+5. Invite-gated access + admin console
+6. Deploying to production on Azure
+7. Pipeline said success, site still failed
+8. Nginx stale upstream/container IP issue
+9. CORS bug in production only
+10. Kafka localhost bug that caused 0 tickets sold
+11. The bug that sold only 1 ticket
+12. Hardening CI/CD with public smoke tests and rollback
 
-This sequence works well because it starts with vision and architecture, then moves into increasingly real production problems and the fixes that made the system more robust.
+This sequence works well because it starts with vision and architecture, then moves into increasingly real production problems and finally ends with the pipeline and system becoming more mature.
 
 ---
 
@@ -142,7 +149,162 @@ Distributed systems are interesting because success is easy to model. Failure is
 
 ---
 
-## Post 3: Deploying To Production On Azure
+## Post 3: Real-Time Order Tracking With SSE
+
+### Core angle
+
+This is the “how I made an async backend visible in real time” post.
+
+### What to emphasize
+
+- `POST /orders` returns immediately
+- saga settles asynchronously
+- SSE pushes live status back to the browser
+- race condition where saga can finish before subscription
+- why SSE was the right choice over polling/websocket
+
+### Draft post
+
+One of my favorite parts of **Flash Sale Engine** is that the frontend doesn’t just fire orders and wait blindly.
+It actually follows the saga in real time.
+
+The challenge was:
+
+`POST /orders` returns immediately, but the real outcome happens later:
+- inventory might reserve stock
+- payment might succeed
+- payment might fail
+- inventory might compensate
+
+So I added **Server-Sent Events (SSE)** to stream order status back to the browser.
+
+The flow became:
+- browser places the order
+- gets back `CREATED`
+- opens an SSE stream for that order
+- receives updates like:
+  - `INVENTORY_RESERVED`
+  - `COMPLETED`
+  - `FAILED`
+
+The interesting part wasn’t just wiring SSE.
+It was handling the edge case where the saga finishes so fast that the browser subscribes after the final state is already written.
+
+So the backend has to do more than “keep a connection open.”
+It has to detect whether the order is already terminal and immediately return the real final state.
+
+That turned the frontend from “fire-and-forget” into something that actually reflects the asynchronous backend truth.
+
+### Suggested caption
+
+Async systems feel much more real when the UI can follow the saga as it happens.
+
+---
+
+## Post 4: Why The Frontend Had To Become Backend-Driven
+
+### Core angle
+
+This is the “the UI was lying until I fixed the source of truth” post.
+
+### What to emphasize
+
+- frontend sampled only a subset of orders
+- KPIs were misleading
+- backend stats endpoint fixed the problem
+- difference between local UI counters and real backend truth
+
+### Draft post
+
+At one point, my flash sale dashboard looked polished but wasn’t actually telling the truth.
+
+The frontend tracked only a sampled subset of live orders through SSE.
+That kept the UI lightweight, but it created a problem:
+
+When I ran a 120-order simulation, the success rate shown in the cockpit could be wildly misleading because the browser only had detailed visibility into a subset of orders.
+
+So I changed the design.
+
+Instead of letting the frontend estimate outcomes from partial data, I added a backend session stats endpoint:
+
+`GET /orders/stats?since=...`
+
+That endpoint returns the real counts for the current run:
+- total
+- in flight
+- completed
+- failed
+- timed out
+- rate limited
+
+After that, the dashboard stopped being a visualization of a sample and became a visualization of the actual system.
+
+It was a good reminder that a polished UI is not enough.
+If the source of truth is wrong, the dashboard is just a good-looking guess.
+
+### Suggested caption
+
+Sometimes the frontend bug isn’t visual. Sometimes the bug is that the dashboard is confidently wrong.
+
+---
+
+## Post 5: Invite-Gated Access + Admin Console
+
+### Core angle
+
+This is the “I treated the demo like a real shared product” post.
+
+### What to emphasize
+
+- public users were sharing one stock pool
+- added invite gate
+- created admin-service
+- created separate admin frontend
+- sessions in Redis
+- stock top-up flow
+
+### Draft post
+
+One product-thinking decision in **Flash Sale Engine** changed the project a lot:
+
+I realized that if I put the public simulation online as-is, every real visitor would be hitting the same shared stock pool.
+
+That meant the public demo needed more than a frontend.
+It needed access control and basic operations.
+
+So I added:
+- an **invite-gated public access flow**
+- a new **admin-service**
+- a separate **admin frontend**
+- **Redis-backed public and admin sessions**
+- **stock top-up controls**
+
+That changed the project from “simulation UI” into something closer to an actual operated environment.
+
+The public site now has:
+- invite requests
+- invite redemption
+- session restore on refresh
+
+The admin side now has:
+- invite review
+- invite approval/rejection
+- invite history
+- product stock top-up
+
+I like this addition because it came from thinking beyond code.
+The question wasn’t “can I add more features?”
+It was:
+
+**what does this system need if real people are going to touch it?**
+
+### Suggested caption
+
+The moment a project becomes public, you start noticing all the product and operations problems that local development hides.
+
+---
+
+## Post 6: Deploying To Production On Azure
 
 ### Core angle
 
@@ -188,7 +350,7 @@ Shipping to production changes the kind of problems you get to solve.
 
 ---
 
-## Post 4: Pipeline Said Success, Site Still Failed
+## Post 7: Pipeline Said Success, Site Still Failed
 
 ### Core angle
 
@@ -230,7 +392,7 @@ A successful deployment is not the same thing as a working production system.
 
 ---
 
-## Post 5: Nginx Stale Upstream / Container IP Issue
+## Post 8: Nginx Stale Upstream / Container IP Issue
 
 ### Core angle
 
@@ -272,7 +434,7 @@ Sometimes the app is fine. The proxy is just talking to ghosts.
 
 ---
 
-## Post 6: CORS Bug In Production Only
+## Post 9: CORS Bug In Production Only
 
 ### Core angle
 
@@ -317,7 +479,7 @@ Healthy service does not always mean reachable service. Browsers are very honest
 
 ---
 
-## Post 7: Kafka `localhost` Bug That Caused 0 Tickets Sold
+## Post 10: Kafka `localhost` Bug That Caused 0 Tickets Sold
 
 ### Core angle
 
@@ -386,6 +548,20 @@ That bug was a perfect reminder that:
 
 **“localhost” is one of the most dangerous words in containerized production systems.**
 
+The before/after result made the issue especially satisfying.
+
+Before the fix:
+- 120 orders fired
+- 0 tickets sold
+- stock stayed at 100
+
+After the fix:
+- 120 orders fired
+- 94 tickets sold
+- 26 rejected
+- healthy services
+- correct stock movement
+
 It also became one of my favorite lessons from this project, because it’s such a real “works locally, fails in prod” debugging story.
 
 ### Suggested caption
@@ -414,7 +590,61 @@ This is exactly the kind of bug that teaches you the real difference between loc
 
 ---
 
-## Post 8: Hardening CI/CD With Public Smoke Tests And Rollback
+## Post 11: The Bug That Sold Only 1 Ticket
+
+### Core angle
+
+This is the “I thought the system was working, but it had multiple concurrency/resilience bugs stacked together” post.
+
+### What to emphasize
+
+- only 1 ticket sold in an early run
+- premature circuit breaker trips
+- state machine race condition
+- inventory concurrency issue
+- debugging wasn’t one fix, it was a stack of fixes
+
+### Draft post
+
+One of the most interesting debugging phases in **Flash Sale Engine** happened when the system didn’t fully fail, but also clearly didn’t work.
+
+I ran the simulation expecting a healthy flash sale.
+Instead, I got a result where only **1 ticket sold**.
+
+That kind of bug is harder than a crash, because the system is doing *something*.
+It just isn’t doing the right thing under load.
+
+The root cause ended up being a stack of issues:
+
+1. **The circuit breaker was tripping too early**
+   With the original thresholds, a few random failures at 20% failure rate were enough to open the breaker much too soon during a burst.
+
+2. **There was a race in the order state machine**
+   Payment completion could arrive before inventory-reserved had been processed, which left some orders stuck in the wrong state.
+
+3. **Inventory concurrency under load was wrong**
+   Multiple threads were colliding on stale stock state and losing reservation attempts under contention.
+
+The fix wasn’t one heroic change.
+It was careful systems debugging:
+- adjust the breaker thresholds so it reflects real failure behavior
+- make the order state machine tolerate out-of-order cross-topic delivery
+- serialize the critical inventory write path correctly
+
+After those fixes, the simulation started behaving like a flash sale system instead of a fragile demo.
+
+I like this bug because it shows something important:
+
+In distributed systems, a “bad result” is often not one bug.
+It’s multiple reasonable pieces interacting badly under concurrency.
+
+### Suggested caption
+
+The hardest bugs aren’t always crashes. Sometimes the system works just enough to mislead you.
+
+---
+
+## Post 12: Hardening CI/CD With Public Smoke Tests And Rollback
 
 ### Core angle
 
@@ -466,17 +696,21 @@ If you want the series to build momentum naturally, post in this order:
 
 1. Building the flash-sale engine
 2. Designing saga + outbox + Redis + circuit breaker
-3. Deploying to production on Azure
-4. Pipeline said success, site still failed
-5. Nginx stale upstream/container IP issue
-6. CORS bug in production only
-7. Kafka localhost bug that caused 0 tickets sold
-8. Hardening CI/CD with public smoke tests and rollback
+3. Real-time order tracking with SSE
+4. Why the frontend had to become backend-driven
+5. Invite-gated access + admin console
+6. Deploying to production on Azure
+7. Pipeline said success, site still failed
+8. Nginx stale upstream/container IP issue
+9. CORS bug in production only
+10. Kafka localhost bug that caused 0 tickets sold
+11. The bug that sold only 1 ticket
+12. Hardening CI/CD with public smoke tests and rollback
 
 Why this order works:
 - starts with excitement and system design
-- moves into real production lessons
-- ends with maturity: how the pipeline got stronger
+- moves into real product and production lessons
+- ends with maturity: how the system and pipeline got stronger
 
 ---
 
@@ -512,6 +746,8 @@ You can keep repeating these themes in different forms:
 - container networking changes the meaning of `localhost`
 - observability and deployment verification are part of product quality
 - strong pipelines are built from real failures
+- dashboards need truthful backend-driven metrics, not just polished visuals
+- product thinking matters even in backend-heavy systems
 
 ---
 
