@@ -82,16 +82,16 @@ function MobileRelayScreen({ authenticated, sessionName, sessionExpiresAt }) {
   });
 
   return (
-    <div className="mobile-relay-shell relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(103,232,249,0.22),_transparent_34%),radial-gradient(circle_at_bottom,_rgba(74,222,128,0.16),_transparent_32%),linear-gradient(180deg,_#020712_0%,_#07111d_55%,_#03070d_100%)] px-5 py-6 text-slate-100">
+    <div className="mobile-relay-shell relative min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top,_rgba(103,232,249,0.22),_transparent_34%),radial-gradient(circle_at_bottom,_rgba(74,222,128,0.16),_transparent_32%),linear-gradient(180deg,_#020712_0%,_#07111d_55%,_#03070d_100%)] px-5 py-6 text-slate-100">
       <div className="starfield absolute inset-0 opacity-80" />
       <div className="mobile-relay-orbit mobile-relay-orbit-one" />
       <div className="mobile-relay-orbit mobile-relay-orbit-two" />
 
-      <div className="relative mx-auto flex min-h-[calc(100vh-3rem)] max-w-md flex-col justify-between">
+      <div className="relative mx-auto flex min-h-[calc(100vh-3rem)] max-w-md flex-col justify-between gap-6">
         <div>
           <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-[11px] uppercase tracking-[0.28em] text-cyan-50">
             <span className="h-2 w-2 rounded-full bg-cyan-300 shadow-[0_0_18px_rgba(103,232,249,0.9)]" />
-            Mobile relay
+            Desktop experience
           </div>
 
           <section className="mt-6 rounded-[2rem] border border-white/10 bg-slate-950/45 p-5 shadow-cockpit backdrop-blur-xl">
@@ -395,6 +395,28 @@ export default function App() {
       window.removeEventListener("resize", syncViewport);
     };
   }, []);
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    const previousOverflowX = document.body.style.overflowX;
+    const previousOverflowY = document.body.style.overflowY;
+
+    if (mobileViewport) {
+      document.body.style.overflow = "auto";
+      document.body.style.overflowX = "hidden";
+      document.body.style.overflowY = "auto";
+    } else {
+      document.body.style.overflow = "";
+      document.body.style.overflowX = "";
+      document.body.style.overflowY = "";
+    }
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.body.style.overflowX = previousOverflowX;
+      document.body.style.overflowY = previousOverflowY;
+    };
+  }, [mobileViewport]);
 
   useEffect(() => {
     refreshSession();
