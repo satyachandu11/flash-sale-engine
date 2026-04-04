@@ -43,9 +43,6 @@ public class EmailService {
                 "New Flash Sale access request from " + inviteRequest.getName(),
                 ADMIN_SENDER_NAME,
                 """
-                <div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all;">
-                  New access request from %s is waiting for review in the admin dashboard.
-                </div>
                 <div style="background:#020712;margin:0;padding:32px 16px;font-family:'Segoe UI',Arial,sans-serif;color:#d6e3f5;">
                   <div style="max-width:680px;margin:0 auto;border:1px solid rgba(255,255,255,0.08);border-radius:28px;overflow:hidden;background:
                     radial-gradient(circle at top, rgba(245,158,11,0.16), transparent 28%%),
@@ -113,7 +110,6 @@ public class EmailService {
                   </div>
                 </div>
                 """.formatted(
-                        escapeHtml(inviteRequest.getName()),
                         BRAND_NAME,
                         escapeHtml(inviteRequest.getName()),
                         escapeHtml(inviteRequest.getEmail()),
@@ -134,9 +130,6 @@ public class EmailService {
                 "Flash Sale Engine access approved: your invite is ready.",
                 ACCESS_SENDER_NAME,
                 """
-                <div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all;">
-                  Your access code is ready. Open the simulator on desktop for the full live dashboard experience.
-                </div>
                 <div style="background:#020712;margin:0;padding:32px 16px;font-family:'Segoe UI',Arial,sans-serif;color:#d6e3f5;">
                   <div style="max-width:680px;margin:0 auto;border:1px solid rgba(255,255,255,0.08);border-radius:28px;overflow:hidden;background:
                     radial-gradient(circle at top, rgba(103,232,249,0.18), transparent 30%%),
