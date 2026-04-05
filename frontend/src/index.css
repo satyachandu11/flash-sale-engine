@@ -192,6 +192,10 @@
       radial-gradient(circle at top, rgba(245, 158, 11, 0.2), transparent 55%),
       rgba(255, 255, 255, 0.04);
   }
+
+  .tour-focus {
+    animation: tour-pulse 2.2s ease-in-out infinite;
+  }
 }
 
 @keyframes relay-scan {
@@ -201,6 +205,17 @@
 
   100% {
     transform: translateX(140%);
+  }
+}
+
+@keyframes tour-pulse {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-2px);
   }
 }
 

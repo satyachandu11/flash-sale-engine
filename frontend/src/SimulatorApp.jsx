@@ -80,6 +80,39 @@ const RUN_STATUS_META = {
   aborted: { label: "Aborted", tone: "danger" }
 };
 
+const TOUR_STEPS = [
+  {
+    id: "command-rail",
+    eyebrow: "Mission Briefing 01",
+    title: "Start with the scenario rail",
+    detail: "Pick a preset or tune orders, lanes, virtual users, pace, and failure rate. This is where you shape the pressure test before launch."
+  },
+  {
+    id: "battle-glass",
+    eyebrow: "Mission Briefing 02",
+    title: "Watch the saga in battle glass",
+    detail: "These KPI cards summarize the run as it happens: launch volume, in-flight work, success rate, and failure rate."
+  },
+  {
+    id: "outcome-deck",
+    eyebrow: "Mission Briefing 03",
+    title: "Read the story in the outcome deck",
+    detail: "Outcome Feed, Live Events, and Selected Order turn the backend traffic into a readable timeline so you can inspect what happened to individual requests."
+  },
+  {
+    id: "observability-rail",
+    eyebrow: "Mission Briefing 04",
+    title: "Use the observability rail as ground truth",
+    detail: "This side rail shows service health, breaker state, inventory telemetry, and trend charts so the visuals are backed by real metrics."
+  },
+  {
+    id: "cockpit-footer",
+    eyebrow: "Mission Briefing 05",
+    title: "Scan the footer for the quick state check",
+    detail: "The footer keeps the essential summary in sight: stock sold, stock left, payment gateway state, and your active session."
+  }
+];
+
 function buildConfigFromPreset(preset) {
   return { ...preset.config };
 }
@@ -261,6 +294,84 @@ const MissionEvent = memo(function MissionEvent({ event }) {
   );
 });
 
+const MissionBriefingOverlay = memo(function MissionBriefingOverlay({ step, stepIndex, stepCount, onClose, onNext, onPrevious }) {
+  return (
+    <AnimatePresence>
+      <motion.div
+        animate={{ opacity: 1 }}
+        className="pointer-events-none absolute inset-0 z-30 bg-[radial-gradient(circle_at_top,rgba(103,232,249,0.08),transparent_30%),rgba(2,6,23,0.68)] backdrop-blur-[2px]"
+        initial={{ opacity: 0 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+      >
+        <motion.aside
+          animate={{ opacity: 1, x: 0 }}
+          className="pointer-events-auto absolute right-6 top-6 w-full max-w-md rounded-[2rem] border border-cyan-300/20 bg-slate-950/92 p-6 shadow-[0_30px_80px_rgba(2,8,18,0.72)]"
+          initial={{ opacity: 0, x: 24 }}
+          exit={{ opacity: 0, x: 24 }}
+          transition={{ duration: 0.25, ease: "easeOut" }}
+        >
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="hud-label">{step.eyebrow}</p>
+              <h3 className="mt-2 font-serif text-3xl leading-tight text-white">{step.title}</h3>
+            </div>
+            <button
+              className="rounded-full border border-white/10 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-slate-300 transition hover:bg-white/10"
+              onClick={onClose}
+              type="button"
+            >
+              Close
+            </button>
+          </div>
+
+          <p className="mt-4 text-sm leading-7 text-slate-300">{step.detail}</p>
+
+          <div className="mt-6 h-1.5 rounded-full bg-white/10">
+            <motion.div
+              animate={{ width: `${((stepIndex + 1) / stepCount) * 100}%` }}
+              className="h-full rounded-full bg-gradient-to-r from-cyan via-sky-400 to-emerald-400"
+              initial={false}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+            />
+          </div>
+
+          <div className="mt-3 flex items-center justify-between text-xs text-slate-400">
+            <span>Follow the glowing panel in the cockpit.</span>
+            <span>{stepIndex + 1} / {stepCount}</span>
+          </div>
+
+          <div className="mt-6 flex items-center justify-between gap-3">
+            <button
+              className="rounded-full border border-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-45"
+              disabled={stepIndex === 0}
+              onClick={onPrevious}
+              type="button"
+            >
+              Previous
+            </button>
+            <div className="flex items-center gap-2">
+              {Array.from({ length: stepCount }).map((_, index) => (
+                <span
+                  key={`tour-dot-${index}`}
+                  className={`h-2.5 w-2.5 rounded-full ${index === stepIndex ? "bg-cyan shadow-[0_0_14px_rgba(103,232,249,0.75)]" : "bg-white/20"}`}
+                />
+              ))}
+            </div>
+            <button
+              className="rounded-full border border-cyan-300/30 bg-cyan-400/15 px-4 py-2 text-sm font-medium text-cyan-50 transition hover:bg-cyan-400/25"
+              onClick={onNext}
+              type="button"
+            >
+              {stepIndex === stepCount - 1 ? "Finish" : "Next"}
+            </button>
+          </div>
+        </motion.aside>
+      </motion.div>
+    </AnimatePresence>
+  );
+});
+
 const SampleCard = memo(function SampleCard({ order, onSelect }) {
   return (
     <button
@@ -369,6 +480,8 @@ export default function App({ sessionName, sessionEmail, sessionExpiresAt, onLog
   const [inventoryHistory, setInventoryHistory] = useState([]);
   const [backendStats, setBackendStats] = useState(null);
   const [isPending, startTransition] = useTransition();
+  const [tourOpen, setTourOpen] = useState(false);
+  const [tourIndex, setTourIndex] = useState(0);
 
   const productOptions = useMemo(() => makeProductOptions(), []);
   const selectedPreset = PRESETS.find((preset) => preset.id === selectedPresetId) ?? PRESETS[0];
@@ -408,6 +521,19 @@ export default function App({ sessionName, sessionEmail, sessionExpiresAt, onLog
   const missionProgress = progressPercentage(counters.submitted, config.totalOrders);
   const stockLeftPercent = stockPercentage(inventorySnapshot);
   const runMeta = RUN_STATUS_META[runStatus] ?? RUN_STATUS_META.idle;
+  const currentTourStep = TOUR_STEPS[tourIndex];
+
+  function tourSectionClasses(stepId) {
+    if (!tourOpen || currentTourStep?.id !== stepId) {
+      return "";
+    }
+    return "relative z-40 ring-2 ring-cyan-300/70 shadow-[0_0_0_1px_rgba(103,232,249,0.3),0_0_34px_rgba(103,232,249,0.2)] tour-focus";
+  }
+
+  const openTour = useEffectEvent((startIndex = 0) => {
+    setTourIndex(startIndex);
+    setTourOpen(true);
+  });
 
   const appendLiveEvent = useEffectEvent((event) => {
     startTransition(() => {
@@ -881,6 +1007,25 @@ export default function App({ sessionName, sessionEmail, sessionExpiresAt, onLog
 
   const narrativeHeadline = buildNarrativeHeadline();
 
+  useEffect(() => {
+    if (!tourOpen) return undefined;
+
+    const handleKeydown = (event) => {
+      if (event.key === "Escape") {
+        setTourOpen(false);
+      }
+      if (event.key === "ArrowRight") {
+        setTourIndex((current) => Math.min(current + 1, TOUR_STEPS.length - 1));
+      }
+      if (event.key === "ArrowLeft") {
+        setTourIndex((current) => Math.max(current - 1, 0));
+      }
+    };
+
+    window.addEventListener("keydown", handleKeydown);
+    return () => window.removeEventListener("keydown", handleKeydown);
+  }, [tourOpen]);
+
   // Prefer backend stats (all orders) over local counters (sampled only) when available
   const displayTotal = backendStats ? backendStats.total : counters.submitted;
   const displayInFlight = backendStats ? backendStats.inFlight : activeOrders;
@@ -915,6 +1060,22 @@ export default function App({ sessionName, sessionEmail, sessionExpiresAt, onLog
         transition={{ duration: 22, ease: "easeInOut", repeat: Infinity }}
       />
       <div className="starfield absolute inset-0" />
+      {tourOpen ? (
+        <MissionBriefingOverlay
+          onClose={() => setTourOpen(false)}
+          onNext={() => {
+            if (tourIndex === TOUR_STEPS.length - 1) {
+              setTourOpen(false);
+              return;
+            }
+            setTourIndex((current) => Math.min(current + 1, TOUR_STEPS.length - 1));
+          }}
+          onPrevious={() => setTourIndex((current) => Math.max(current - 1, 0))}
+          step={currentTourStep}
+          stepCount={TOUR_STEPS.length}
+          stepIndex={tourIndex}
+        />
+      ) : null}
 
       <div className="relative z-10 flex h-full min-h-0 flex-col p-4">
         <motion.header
@@ -929,6 +1090,24 @@ export default function App({ sessionName, sessionEmail, sessionExpiresAt, onLog
           </div>
 
           <div className="flex min-w-0 flex-1 items-center justify-end gap-3">
+            <button
+              className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-white/12 bg-white/6 pl-3.5 pr-3 py-2 text-sm font-medium text-white transition hover:bg-white/12"
+              onClick={() => openTour(0)}
+              type="button"
+            >
+              Mission Briefing
+              <span className="inline-flex items-center justify-center text-slate-950">
+                <svg aria-hidden="true" className="h-6 w-8" fill="none" viewBox="0 0 44 36">
+                  <path d="M8.5 5.5C4.8 8.9 2.75 13.2 2.75 18s2.05 9.1 5.75 12.5" stroke="#e2e8f0" strokeLinecap="round" strokeWidth="2.2" />
+                  <path d="M35.5 5.5c3.7 3.4 5.75 7.7 5.75 12.5s-2.05 9.1-5.75 12.5" stroke="#e2e8f0" strokeLinecap="round" strokeWidth="2.2" />
+                  <circle cx="22" cy="18" fill="#67e8f9" fillOpacity=".18" r="10.5" stroke="#67e8f9" strokeWidth="2" />
+                  <circle cx="22" cy="11.4" fill="#e0f2fe" r="1.8" />
+                  <path d="M19.6 15.8h4.8" stroke="#e0f2fe" strokeLinecap="round" strokeWidth="2" />
+                  <path d="M22 15.8v8.1" stroke="#e0f2fe" strokeLinecap="round" strokeWidth="2" />
+                  <path d="M19.1 23.9h5.8" stroke="#e0f2fe" strokeLinecap="round" strokeWidth="2" />
+                </svg>
+              </span>
+            </button>
             <CommandChip label="Preset" tone="neutral" value={selectedPreset.name} />
             <CommandChip label="Runtime" tone={runMeta.tone} value={runMeta.label} />
             <CommandChip label="Session" tone="neutral" value={formatDuration(sessionSeconds)} />
@@ -1000,7 +1179,7 @@ export default function App({ sessionName, sessionEmail, sessionExpiresAt, onLog
         </div>
 
         <main className="cockpit-grid mt-4 grid min-h-0 flex-1 gap-4">
-          <section className="glass-panel col-start-1 row-span-2 flex min-h-0 flex-col overflow-hidden p-5">
+          <section className={`glass-panel col-start-1 row-span-2 flex min-h-0 flex-col overflow-hidden p-5 ${tourSectionClasses("command-rail")}`} data-tour-id="command-rail">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="hud-label">Command Rail</p>
@@ -1112,7 +1291,7 @@ export default function App({ sessionName, sessionEmail, sessionExpiresAt, onLog
             </div>
           </section>
 
-          <section className="glass-panel relative col-start-2 row-start-1 flex min-h-0 flex-col p-5">
+          <section className={`glass-panel relative col-start-2 row-start-1 flex min-h-0 flex-col p-5 ${tourSectionClasses("battle-glass")}`} data-tour-id="battle-glass">
             <div className="pointer-events-none absolute inset-0 rounded-3xl bg-[radial-gradient(circle_at_50%_0%,rgba(103,232,249,0.16),transparent_45%),linear-gradient(180deg,rgba(2,6,23,0.1),rgba(2,6,23,0.5))]" />
             <div className="relative flex flex-col gap-3">
               <div className="flex items-start justify-between gap-4">
@@ -1279,7 +1458,7 @@ export default function App({ sessionName, sessionEmail, sessionExpiresAt, onLog
             )}
           </section>
 
-          <section className="glass-panel col-start-2 row-start-2 grid min-h-0 grid-cols-[minmax(0,0.95fr)_minmax(0,0.95fr)_minmax(0,1.1fr)] gap-4 overflow-hidden p-4">
+          <section className={`glass-panel col-start-2 row-start-2 grid min-h-0 grid-cols-[minmax(0,0.95fr)_minmax(0,0.95fr)_minmax(0,1.1fr)] gap-4 overflow-hidden p-4 ${tourSectionClasses("outcome-deck")}`} data-tour-id="outcome-deck">
             <div className="min-h-0 overflow-hidden">
               <div className="flex items-center justify-between gap-2">
                 <div>
@@ -1358,7 +1537,7 @@ export default function App({ sessionName, sessionEmail, sessionExpiresAt, onLog
                 </section>
               }
             >
-              <div className="col-start-3 row-span-2 min-h-0">
+              <div className={`col-start-3 row-span-2 min-h-0 ${tourSectionClasses("observability-rail")}`} data-tour-id="observability-rail">
                 <ObservabilityRail
                   counters={counters}
                   history={history}
@@ -1374,7 +1553,7 @@ export default function App({ sessionName, sessionEmail, sessionExpiresAt, onLog
           </CockpitErrorBoundary>
         </main>
 
-        <footer className="mt-3 flex items-center justify-between rounded-[1.2rem] border border-white/10 bg-white/5 px-4 py-1.5 text-xs text-slate-400">
+        <footer className={`mt-3 flex items-center justify-between rounded-[1.2rem] border border-white/10 bg-white/5 px-4 py-1.5 text-xs text-slate-400 ${tourSectionClasses("cockpit-footer")}`} data-tour-id="cockpit-footer">
           <div className="flex items-center gap-4">
             <span>Stock sold: {formatCompact(stockSold)}</span>
             <span>Stock left: {formatPercent(stockLeftPercent)}</span>

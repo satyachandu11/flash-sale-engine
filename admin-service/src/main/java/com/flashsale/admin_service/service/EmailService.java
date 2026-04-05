@@ -127,7 +127,7 @@ public class EmailService {
 
         sendEmail(
                 List.of(inviteRequest.getEmail()),
-                "Your Flash Sale Engine invite is ready - " + inviteCode,
+                "Your Flash Sale Engine invite is ready - " + inviteRequest.getName(),
                 ACCESS_SENDER_NAME,
                 """
                 <div style="background:#020712;margin:0;padding:32px 16px;font-family:'Segoe UI',Arial,sans-serif;color:#d6e3f5;">
