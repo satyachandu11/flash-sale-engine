@@ -41,6 +41,9 @@ export function shortId(value, length = 8) {
 }
 
 export function statusLabel(status) {
+  if (status === "CREATED") return "Accepted in saga";
+  if (status === "INVENTORY_RESERVED") return "Stock secured";
+  if (status === "RATE_LIMITED") return "Too many requests";
   return STATUS_META[status]?.label ?? status;
 }
 

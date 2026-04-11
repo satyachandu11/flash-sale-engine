@@ -31,6 +31,30 @@
   textarea {
     font: inherit;
   }
+
+  button:not(:disabled) {
+    cursor: pointer;
+    transition-property: color, background-color, border-color, box-shadow, filter, transform;
+    transition-duration: 160ms;
+    transition-timing-function: ease-out;
+  }
+
+  button:not(:disabled):hover {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+  }
+
+  button:not(:disabled):active {
+    filter: brightness(1.18);
+    transform: translateY(0) scale(0.98);
+  }
+
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible {
+    outline: 2px solid rgba(103, 232, 249, 0.75);
+    outline-offset: 2px;
+  }
 }
 
 @layer components {
@@ -196,6 +220,13 @@
   .tour-focus {
     animation: tour-pulse 2.2s ease-in-out infinite;
   }
+
+  .selected-order-attention {
+    animation: selected-order-flash 1.4s ease-out;
+    box-shadow:
+      0 0 0 1px rgba(103, 232, 249, 0.48),
+      0 0 24px rgba(103, 232, 249, 0.22);
+  }
 }
 
 @keyframes relay-scan {
@@ -219,9 +250,132 @@
   }
 }
 
+@keyframes selected-order-flash {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(103, 232, 249, 0.28),
+      0 0 14px rgba(103, 232, 249, 0.14);
+  }
+
+  35% {
+    box-shadow:
+      0 0 0 2px rgba(103, 232, 249, 0.78),
+      0 0 30px rgba(103, 232, 249, 0.36);
+  }
+}
+
 @media (max-width: 1680px) {
   .cockpit-grid {
     grid-template-columns: 300px minmax(0, 1fr) 360px;
     grid-template-rows: auto minmax(0, 1fr);
+  }
+}
+
+@media (max-height: 820px), (max-width: 1500px) {
+  .cockpit-shell {
+    padding: 0.75rem;
+  }
+
+  .cockpit-header {
+    min-height: 4.25rem;
+    gap: 0.65rem;
+    padding: 0.75rem 1rem;
+  }
+
+  .cockpit-title {
+    width: 10.5rem;
+  }
+
+  .cockpit-title .hud-label,
+  .cockpit-shell .hud-label {
+    font-size: 9px;
+    letter-spacing: 0.2em;
+  }
+
+  .cockpit-title h1 {
+    font-size: 1.85rem;
+  }
+
+  .cockpit-actions {
+    gap: 0.5rem;
+  }
+
+  .cockpit-actions > button {
+    height: 2.35rem;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+    font-size: 0.75rem;
+  }
+
+  .cockpit-actions svg {
+    width: 1.55rem;
+    height: 1.25rem;
+  }
+
+  .cockpit-actions .status-pill {
+    max-width: 9.75rem;
+    gap: 0.35rem;
+    padding: 0.3rem 0.6rem;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+  }
+
+  .cockpit-failure-card {
+    width: 12.75rem;
+    padding: 0.5rem 0.65rem;
+  }
+
+  .cockpit-failure-label {
+    font-size: 0.62rem;
+    letter-spacing: 0.13em;
+  }
+
+  .cockpit-failure-card input {
+    margin-top: 0.35rem;
+  }
+
+  .cockpit-grid {
+    grid-template-columns: 260px minmax(0, 1fr) 300px;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+  }
+
+  .cockpit-panel,
+  .observability-panel {
+    padding: 0.85rem;
+  }
+
+  .cockpit-grid .rounded-\[1\.5rem\],
+  .observability-panel .rounded-3xl,
+  .observability-panel .rounded-\[1\.75rem\] {
+    border-radius: 1rem;
+  }
+
+  .cockpit-grid h2,
+  .observability-panel h2 {
+    font-size: 1.5rem;
+  }
+
+  .cockpit-grid h3,
+  .observability-panel h3 {
+    font-size: 0.95rem;
+  }
+
+  .cockpit-grid p,
+  .observability-panel p {
+    line-height: 1.35;
+  }
+
+  .rail-short-chart {
+    height: 5rem;
+  }
+
+  .rail-tall-chart {
+    height: 8rem;
+  }
+
+  .rail-pie-chart {
+    height: 7.5rem;
   }
 }

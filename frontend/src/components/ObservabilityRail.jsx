@@ -74,7 +74,7 @@ const ObservabilityRail = memo(function ObservabilityRail({
   const breakerTone = circuitTone(paymentConfig.circuitState);
 
   return (
-    <section className="glass-panel flex h-full min-h-0 flex-col overflow-hidden p-5">
+    <section className="observability-panel glass-panel flex h-full min-h-0 flex-col overflow-hidden p-5">
       <div className="flex items-start justify-between">
         <div>
           <p className="hud-label">Observability Rail</p>
@@ -135,7 +135,7 @@ const ObservabilityRail = memo(function ObservabilityRail({
               <div>Reserved: {inventorySnapshot.loaded ? formatCompact(inventorySnapshot.reservedStock) : "--"}</div>
             </div>
           </div>
-          <div className="mt-4 h-28">
+          <div className="rail-short-chart mt-4 h-28">
             {inventoryHistory.length >= 2 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={inventoryHistory}>
@@ -170,7 +170,7 @@ const ObservabilityRail = memo(function ObservabilityRail({
             </div>
             <div className="text-xs text-slate-400">Deferred chart updates keep the feed responsive</div>
           </div>
-          <div className="mt-4 h-48">
+          <div className="rail-tall-chart mt-4 h-48">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={railHistory}>
                 <defs>
@@ -214,7 +214,7 @@ const ObservabilityRail = memo(function ObservabilityRail({
             <div className="text-xs text-slate-400">Sampled from the current run</div>
           </div>
           <div className="mt-4 grid grid-cols-[1fr_8rem] items-center gap-3">
-            <div className="h-40">
+            <div className="rail-pie-chart h-40">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie data={stageMix} dataKey="value" nameKey="name" innerRadius={42} outerRadius={64} paddingAngle={3}>

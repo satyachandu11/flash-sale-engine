@@ -233,7 +233,7 @@ function AccessGate({
   requestError
 }) {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(103,232,249,0.18),_transparent_34%),radial-gradient(circle_at_bottom_right,_rgba(15,118,110,0.22),_transparent_34%),linear-gradient(180deg,_#03111c_0%,_#020712_100%)] px-6 py-10 text-slate-100">
+    <div className="relative h-screen overflow-y-auto overflow-x-hidden bg-[radial-gradient(circle_at_top_left,_rgba(103,232,249,0.18),_transparent_34%),radial-gradient(circle_at_bottom_right,_rgba(15,118,110,0.22),_transparent_34%),linear-gradient(180deg,_#03111c_0%,_#020712_100%)] px-6 py-10 text-slate-100">
       <div className="starfield absolute inset-0 opacity-90" />
       <div className="relative mx-auto flex min-h-[calc(100vh-5rem)] max-w-6xl flex-col justify-center">
         <header className="max-w-3xl">
@@ -451,6 +451,23 @@ export default function App() {
     }
   });
 
+  const handleInviteCodeChange = useEffectEvent((value) => {
+    setInviteCode(value);
+    if (redeemError) {
+      setRedeemError("");
+    }
+  });
+
+  const handleRequestFieldChange = useEffectEvent((field, value) => {
+    setRequestForm((current) => ({ ...current, [field]: value }));
+    if (requestError) {
+      setRequestError("");
+    }
+    if (requestMessage) {
+      setRequestMessage("");
+    }
+  });
+
   const handleRequestInvite = useEffectEvent(() => {
     setRequestError("");
     setRequestMessage("");
@@ -524,11 +541,11 @@ export default function App() {
   return (
     <AccessGate
       inviteCode={inviteCode}
-      onInviteCodeChange={setInviteCode}
+      onInviteCodeChange={handleInviteCodeChange}
       onRedeem={handleRedeem}
       redeemError={redeemError}
       redeemPending={redeemPending}
-      onRequestFieldChange={(field, value) => setRequestForm((current) => ({ ...current, [field]: value }))}
+      onRequestFieldChange={handleRequestFieldChange}
       onRequestInvite={handleRequestInvite}
       requestError={requestError}
       requestForm={requestForm}

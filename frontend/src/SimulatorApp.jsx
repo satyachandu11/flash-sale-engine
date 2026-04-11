@@ -85,7 +85,7 @@ const TOUR_STEPS = [
     id: "command-rail",
     eyebrow: "Mission Briefing 01",
     title: "Start with the scenario rail",
-    detail: "Pick a preset or tune orders, lanes, virtual users, pace, and failure rate. This is where you shape the pressure test before launch."
+    detail: "Pick a preset or tune orders, parallel requests, virtual users, pace, and failure rate. This is where you shape the pressure test before launch."
   },
   {
     id: "battle-glass",
@@ -230,9 +230,9 @@ const KpiCard = memo(function KpiCard({ label, value, tone, detail }) {
 
 const CommandChip = memo(function CommandChip({ label, value, tone = "neutral" }) {
   return (
-    <div className={`status-pill ${toneClasses(tone)}`}>
-      <span className="text-white/70">{label}</span>
-      <span className="text-white">{value}</span>
+    <div className={`status-pill max-w-48 shrink-0 gap-2 px-3 py-1.5 text-[11px] tracking-[0.2em] ${toneClasses(tone)}`}>
+      <span className="shrink-0 text-white/70">{label}</span>
+      <span className="min-w-0 truncate text-white">{value}</span>
     </div>
   );
 });
@@ -258,8 +258,10 @@ const FlightToken = memo(function FlightToken({ order, index }) {
 const FeedRow = memo(function FeedRow({ order, selected, onSelect }) {
   return (
     <button
-      className={`w-full rounded-[1.4rem] border px-4 py-3 text-left transition ${
-        selected ? "border-cyan-300/40 bg-cyan-400/10" : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10"
+      className={`w-full rounded-lg border px-4 py-3 text-left transition ${
+        selected
+          ? "border-cyan-200/80 bg-cyan-300/18 shadow-[0_0_0_1px_rgba(103,232,249,0.35),0_0_22px_rgba(103,232,249,0.22)]"
+          : "border-white/10 bg-white/5 hover:border-cyan-200/45 hover:bg-white/10"
       }`}
       onClick={onSelect}
       type="button"
@@ -299,25 +301,25 @@ const MissionBriefingOverlay = memo(function MissionBriefingOverlay({ step, step
     <AnimatePresence>
       <motion.div
         animate={{ opacity: 1 }}
-        className="pointer-events-none absolute inset-0 z-30 bg-[radial-gradient(circle_at_top,rgba(103,232,249,0.08),transparent_30%),rgba(2,6,23,0.68)] backdrop-blur-[2px]"
+        className="pointer-events-none absolute inset-0 z-20 bg-[radial-gradient(circle_at_top,rgba(103,232,249,0.08),transparent_30%),rgba(2,6,23,0.74)]"
         initial={{ opacity: 0 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.2 }}
+      />
+      <motion.aside
+        animate={{ opacity: 1, x: 0 }}
+        className="pointer-events-auto absolute right-6 top-6 z-50 w-full max-w-md rounded-lg border border-cyan-200/45 bg-slate-950/96 p-6 text-white shadow-[0_30px_90px_rgba(2,8,18,0.88)] backdrop-blur-2xl"
+        initial={{ opacity: 0, x: 24 }}
+        exit={{ opacity: 0, x: 24 }}
+        transition={{ duration: 0.25, ease: "easeOut" }}
       >
-        <motion.aside
-          animate={{ opacity: 1, x: 0 }}
-          className="pointer-events-auto absolute right-6 top-6 w-full max-w-md rounded-[2rem] border border-cyan-300/20 bg-slate-950/92 p-6 shadow-[0_30px_80px_rgba(2,8,18,0.72)]"
-          initial={{ opacity: 0, x: 24 }}
-          exit={{ opacity: 0, x: 24 }}
-          transition={{ duration: 0.25, ease: "easeOut" }}
-        >
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="hud-label">{step.eyebrow}</p>
               <h3 className="mt-2 font-serif text-3xl leading-tight text-white">{step.title}</h3>
             </div>
             <button
-              className="rounded-full border border-white/10 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-slate-300 transition hover:bg-white/10"
+              className="rounded-lg border border-white/10 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-slate-200 transition hover:bg-white/10"
               onClick={onClose}
               type="button"
             >
@@ -325,7 +327,7 @@ const MissionBriefingOverlay = memo(function MissionBriefingOverlay({ step, step
             </button>
           </div>
 
-          <p className="mt-4 text-sm leading-7 text-slate-300">{step.detail}</p>
+          <p className="mt-4 text-sm leading-7 text-slate-100">{step.detail}</p>
 
           <div className="mt-6 h-1.5 rounded-full bg-white/10">
             <motion.div
@@ -343,7 +345,7 @@ const MissionBriefingOverlay = memo(function MissionBriefingOverlay({ step, step
 
           <div className="mt-6 flex items-center justify-between gap-3">
             <button
-              className="rounded-full border border-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-45"
+              className="rounded-lg border border-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-45"
               disabled={stepIndex === 0}
               onClick={onPrevious}
               type="button"
@@ -359,15 +361,14 @@ const MissionBriefingOverlay = memo(function MissionBriefingOverlay({ step, step
               ))}
             </div>
             <button
-              className="rounded-full border border-cyan-300/30 bg-cyan-400/15 px-4 py-2 text-sm font-medium text-cyan-50 transition hover:bg-cyan-400/25"
+              className="rounded-lg border border-cyan-300/30 bg-cyan-400/15 px-4 py-2 text-sm font-medium text-cyan-50 transition hover:bg-cyan-400/25"
               onClick={onNext}
               type="button"
             >
               {stepIndex === stepCount - 1 ? "Finish" : "Next"}
             </button>
           </div>
-        </motion.aside>
-      </motion.div>
+      </motion.aside>
     </AnimatePresence>
   );
 });
@@ -375,7 +376,7 @@ const MissionBriefingOverlay = memo(function MissionBriefingOverlay({ step, step
 const SampleCard = memo(function SampleCard({ order, onSelect }) {
   return (
     <button
-      className={`rounded-[1.4rem] border px-4 py-3 text-left ${toneClasses(toneForStatus(order.status))}`}
+      className={`rounded-lg border px-4 py-3 text-left transition hover:brightness-125 ${toneClasses(toneForStatus(order.status))}`}
       onClick={onSelect}
       type="button"
     >
@@ -467,6 +468,7 @@ export default function App({ sessionName, sessionEmail, sessionExpiresAt, onLog
   const [liveEvents, setLiveEvents] = useState([]);
   const [runStatus, setRunStatus] = useState("idle");
   const [selectedOrderKey, setSelectedOrderKey] = useState(null);
+  const [selectedOrderPulse, setSelectedOrderPulse] = useState(false);
 
   const [sessionSeconds, setSessionSeconds] = useState(0);
   const [banner, setBanner] = useState("");
@@ -491,6 +493,7 @@ export default function App({ sessionName, sessionEmail, sessionExpiresAt, onLog
   const startedAtRef = useRef(null);
   const stockDepletedRef = useRef(false);
   const sampledStreamsRef = useRef(new Map());
+  const selectedOrderPulseTimeoutRef = useRef(null);
   useEffect(() => {
     ordersByClientIdRef.current = ordersByClientId;
   }, [ordersByClientId]);
@@ -527,7 +530,45 @@ export default function App({ sessionName, sessionEmail, sessionExpiresAt, onLog
     if (!tourOpen || currentTourStep?.id !== stepId) {
       return "";
     }
-    return "relative z-40 ring-2 ring-cyan-300/70 shadow-[0_0_0_1px_rgba(103,232,249,0.3),0_0_34px_rgba(103,232,249,0.2)] tour-focus";
+    return "relative z-40 ring-2 ring-cyan-200/90 shadow-[0_0_0_1px_rgba(103,232,249,0.45),0_0_44px_rgba(103,232,249,0.34)] tour-focus";
+  }
+
+  function selectOrder(orderKey) {
+    setSelectedOrderKey(orderKey);
+    setSelectedOrderPulse(true);
+    if (selectedOrderPulseTimeoutRef.current) {
+      window.clearTimeout(selectedOrderPulseTimeoutRef.current);
+    }
+    selectedOrderPulseTimeoutRef.current = window.setTimeout(() => setSelectedOrderPulse(false), 1400);
+  }
+
+  function resetSimulationState() {
+    abortRef.current = { cancelled: true };
+    stockDepletedRef.current = false;
+    sampledStreamsRef.current.forEach((entry) => entry.source.close());
+    sampledStreamsRef.current.clear();
+    if (selectedOrderPulseTimeoutRef.current) {
+      window.clearTimeout(selectedOrderPulseTimeoutRef.current);
+      selectedOrderPulseTimeoutRef.current = null;
+    }
+    const defaultPreset = PRESETS[0];
+    const defaultConfig = buildConfigFromPreset(defaultPreset);
+    ordersByClientIdRef.current = new Map();
+    startedAtRef.current = null;
+    setSelectedPresetId(defaultPreset.id);
+    setConfig(defaultConfig);
+    setOrdersByClientId(new Map());
+    setHistory([]);
+    setLiveEvents([]);
+    setRunStatus("idle");
+    setSelectedOrderKey(null);
+    setSelectedOrderPulse(false);
+    setSessionSeconds(0);
+    setBanner("");
+    setInventoryHistory([]);
+    setBackendStats(null);
+    setInventorySnapshot(buildInventorySnapshot(defaultConfig.productId));
+    setPaymentConfig(buildPaymentConfig(defaultConfig.failureRate, "CHECKING"));
   }
 
   const openTour = useEffectEvent((startIndex = 0) => {
@@ -795,7 +836,7 @@ export default function App({ sessionName, sessionEmail, sessionExpiresAt, onLog
       setLiveEvents([
         makeLiveEvent(
           "Flash sale armed",
-          `${config.totalOrders} orders queued across ${config.virtualUsers} pilots with ${config.concurrency} concurrent launch lanes.`,
+          `${config.totalOrders} orders queued across ${config.virtualUsers} pilots with ${config.concurrency} parallel requests.`,
           "warning",
           "session"
         )
@@ -874,7 +915,7 @@ export default function App({ sessionName, sessionEmail, sessionExpiresAt, onLog
     appendLiveEvent(
       makeLiveEvent(
         "Simulation aborted",
-        "Launch lanes were manually halted. Existing sampled orders will continue to settle.",
+        "Parallel requests were manually halted. Existing sampled orders will continue to settle.",
         "danger",
         "session"
       )
@@ -940,6 +981,9 @@ export default function App({ sessionName, sessionEmail, sessionExpiresAt, onLog
   useEffect(() => () => {
     abortRef.current.cancelled = true;
     sampledStreamsRef.current.forEach((entry) => entry.source.close());
+    if (selectedOrderPulseTimeoutRef.current) {
+      window.clearTimeout(selectedOrderPulseTimeoutRef.current);
+    }
   }, []);
 
   useEffect(() => {
@@ -1077,21 +1121,21 @@ export default function App({ sessionName, sessionEmail, sessionExpiresAt, onLog
         />
       ) : null}
 
-      <div className="relative z-10 flex h-full min-h-0 flex-col p-4">
+      <div className={`cockpit-shell relative flex h-full min-h-0 flex-col p-4 ${tourOpen ? "" : "z-10"}`}>
         <motion.header
-          className="glass-panel flex min-h-[5.6rem] items-center justify-between gap-4 px-6 py-4"
+          className="cockpit-header glass-panel flex min-h-[5rem] items-center justify-between gap-3 px-5 py-3"
           initial={{ opacity: 0, y: -18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55 }}
         >
-          <div className="w-52 shrink-0">
-            <p className="hud-label">FlashSale Engine Simulation</p>
-            <h1 className="mt-1 font-serif text-4xl leading-none text-white text-glow">Cockpit</h1>
+          <div className="cockpit-title w-44 shrink-0">
+            <p className="text-[10px] uppercase tracking-[0.28em] text-cyan/70">FlashSale Engine Simulation</p>
+            <h1 className="mt-0.5 font-serif text-3xl leading-none text-white text-glow">Cockpit</h1>
           </div>
 
-          <div className="flex min-w-0 flex-1 items-center justify-end gap-3">
+          <div className="cockpit-actions flex min-w-0 flex-1 flex-nowrap items-center justify-end gap-3 overflow-hidden">
             <button
-              className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-white/12 bg-white/6 pl-3.5 pr-3 py-2 text-sm font-medium text-white transition hover:bg-white/12"
+              className="inline-flex h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-white/12 bg-white/6 px-4 text-sm font-medium text-white transition hover:border-cyan-200/35 hover:bg-white/12"
               onClick={() => openTour(0)}
               type="button"
             >
@@ -1113,13 +1157,13 @@ export default function App({ sessionName, sessionEmail, sessionExpiresAt, onLog
             <CommandChip label="Session" tone="neutral" value={formatDuration(sessionSeconds)} />
             <CommandChip label="Stock Left" tone={stockLeft === 0 ? "warning" : "neutral"} value={stockLeft == null ? "--" : formatCompact(stockLeft)} />
 
-            <div className="rounded-[1.6rem] border border-white/10 bg-white/5 px-4 py-3">
-              <div className="flex items-center justify-between gap-3">
-                <span className="hud-label">Payment Failure Rate</span>
+            <div className="cockpit-failure-card w-52 shrink-0 rounded-[1.1rem] border border-white/10 bg-white/5 px-3 py-2.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="cockpit-failure-label whitespace-nowrap text-[10px] uppercase tracking-[0.18em] text-cyan/70">Payment Fail Rate</span>
                 <span className="text-sm font-semibold text-white">{formatPercent(config.failureRate * 100)}</span>
               </div>
               <input
-                className="mt-3 h-1.5 w-56 accent-cyan"
+                className="mt-2.5 h-1.5 w-full accent-cyan"
                 max="100"
                 min="0"
                 onChange={(event) => setConfig((current) => ({ ...current, failureRate: clamp(Number(event.target.value) / 100, 0, 1) }))}
@@ -1130,7 +1174,7 @@ export default function App({ sessionName, sessionEmail, sessionExpiresAt, onLog
             </div>
 
             <button
-              className="whitespace-nowrap rounded-full border border-cyan-300/30 bg-cyan-400/15 px-5 py-3 text-sm font-medium text-cyan-50 transition hover:bg-cyan-400/25 disabled:cursor-not-allowed disabled:opacity-55"
+              className="h-11 shrink-0 whitespace-nowrap rounded-full border border-cyan-300/30 bg-cyan-400/15 px-5 text-sm font-medium text-cyan-50 transition hover:border-cyan-200/60 hover:bg-cyan-400/25 disabled:cursor-not-allowed disabled:opacity-55"
               disabled={runStatus === "running" || runStatus === "arming"}
               onClick={startSimulation}
               type="button"
@@ -1138,7 +1182,7 @@ export default function App({ sessionName, sessionEmail, sessionExpiresAt, onLog
               {runStatus === "running" ? "Flash Sale Live" : "Start Flash Sale"}
             </button>
             <button
-              className="whitespace-nowrap rounded-full border border-rose-300/25 bg-rose-500/10 px-5 py-3 text-sm font-medium text-rose-100 transition hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-55"
+              className="h-11 shrink-0 whitespace-nowrap rounded-full border border-rose-300/25 bg-rose-500/10 px-5 text-sm font-medium text-rose-100 transition hover:border-rose-200/55 hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-55"
               disabled={runStatus !== "running" && runStatus !== "arming"}
               onClick={stopSimulation}
               type="button"
@@ -1179,7 +1223,7 @@ export default function App({ sessionName, sessionEmail, sessionExpiresAt, onLog
         </div>
 
         <main className="cockpit-grid mt-4 grid min-h-0 flex-1 gap-4">
-          <section className={`glass-panel col-start-1 row-span-2 flex min-h-0 flex-col overflow-hidden p-5 ${tourSectionClasses("command-rail")}`} data-tour-id="command-rail">
+          <section className={`cockpit-panel glass-panel col-start-1 row-span-2 flex min-h-0 flex-col overflow-hidden p-5 ${tourSectionClasses("command-rail")}`} data-tour-id="command-rail">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="hud-label">Command Rail</p>
@@ -1195,7 +1239,9 @@ export default function App({ sessionName, sessionEmail, sessionExpiresAt, onLog
                   <button
                     key={preset.id}
                     className={`relative overflow-hidden rounded-[1.5rem] border px-4 py-4 text-left transition ${
-                      preset.id === selectedPresetId ? "border-cyan-300/40 bg-white/10" : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10"
+                      preset.id === selectedPresetId
+                        ? "border-cyan-200/75 bg-cyan-300/14 shadow-[0_0_0_1px_rgba(103,232,249,0.25),0_0_22px_rgba(103,232,249,0.16)]"
+                        : "border-white/10 bg-white/5 hover:border-cyan-200/35 hover:bg-white/10"
                     }`}
                     onClick={() => setPreset(preset.id)}
                     type="button"
@@ -1224,7 +1270,7 @@ export default function App({ sessionName, sessionEmail, sessionExpiresAt, onLog
                 </label>
 
                 <label className="rounded-[1.5rem] border border-white/10 bg-white/5 px-3 py-3 text-sm text-slate-300">
-                  <span className="text-[10px] uppercase tracking-wide text-slate-400">Lanes</span>
+                  <span className="text-[10px] uppercase tracking-wide text-slate-400">Parallel Requests</span>
                   <input
                     className="mt-1 w-full bg-transparent text-xl font-semibold text-white outline-none"
                     max="150"
@@ -1291,7 +1337,7 @@ export default function App({ sessionName, sessionEmail, sessionExpiresAt, onLog
             </div>
           </section>
 
-          <section className={`glass-panel relative col-start-2 row-start-1 flex min-h-0 flex-col p-5 ${tourSectionClasses("battle-glass")}`} data-tour-id="battle-glass">
+          <section className={`cockpit-panel glass-panel relative col-start-2 row-start-1 flex min-h-0 flex-col p-5 ${tourSectionClasses("battle-glass")}`} data-tour-id="battle-glass">
             <div className="pointer-events-none absolute inset-0 rounded-3xl bg-[radial-gradient(circle_at_50%_0%,rgba(103,232,249,0.16),transparent_45%),linear-gradient(180deg,rgba(2,6,23,0.1),rgba(2,6,23,0.5))]" />
             <div className="relative flex flex-col gap-3">
               <div className="flex items-start justify-between gap-4">
@@ -1448,7 +1494,7 @@ export default function App({ sessionName, sessionEmail, sessionExpiresAt, onLog
                     <div className={`status-pill ${toneClasses(isPending ? "warning" : "neutral")}`}>{isPending ? "Deferred" : "Stable"}</div>
                   </div>
                   <div className="mt-3 space-y-2">
-                    {sampledOrders.slice(0, 6).map((order) => <SampleCard key={order.clientId} onSelect={() => setSelectedOrderKey(order.orderId ?? order.clientId)} order={order} />)}
+                    {sampledOrders.slice(0, 6).map((order) => <SampleCard key={order.clientId} onSelect={() => selectOrder(order.orderId ?? order.clientId)} order={order} />)}
                     {sampledOrders.length === 0 ? (
                       <div className="rounded-[1.4rem] border border-dashed border-white/10 bg-white/5 px-4 py-8 text-center text-sm text-slate-400">Start a run to open live sampled SSE streams.</div>
                     ) : null}
@@ -1458,7 +1504,7 @@ export default function App({ sessionName, sessionEmail, sessionExpiresAt, onLog
             )}
           </section>
 
-          <section className={`glass-panel col-start-2 row-start-2 grid min-h-0 grid-cols-[minmax(0,0.95fr)_minmax(0,0.95fr)_minmax(0,1.1fr)] gap-4 overflow-hidden p-4 ${tourSectionClasses("outcome-deck")}`} data-tour-id="outcome-deck">
+          <section className={`cockpit-panel glass-panel col-start-2 row-start-2 grid min-h-0 grid-cols-[minmax(0,0.95fr)_minmax(0,0.95fr)_minmax(0,1.1fr)] gap-4 overflow-hidden p-4 ${tourSectionClasses("outcome-deck")}`} data-tour-id="outcome-deck">
             <div className="min-h-0 overflow-hidden">
               <div className="flex items-center justify-between gap-2">
                 <div>
@@ -1469,7 +1515,7 @@ export default function App({ sessionName, sessionEmail, sessionExpiresAt, onLog
               </div>
               <div className="mt-3 h-[calc(100%-3.6rem)] space-y-2 overflow-y-auto pr-1">
                 {recentFeed.map((order) => (
-                  <FeedRow key={order.clientId} onSelect={() => setSelectedOrderKey(order.orderId ?? order.clientId)} order={order} selected={selectedOrderKey === (order.orderId ?? order.clientId)} />
+                  <FeedRow key={order.clientId} onSelect={() => selectOrder(order.orderId ?? order.clientId)} order={order} selected={selectedOrderKey === (order.orderId ?? order.clientId)} />
                 ))}
               </div>
             </div>
@@ -1489,36 +1535,43 @@ export default function App({ sessionName, sessionEmail, sessionExpiresAt, onLog
               </div>
             </div>
 
-            <div className="min-h-0 overflow-hidden">
+            <div className={`min-h-0 overflow-hidden rounded-lg pl-1 transition ${selectedOrderPulse ? "selected-order-attention" : ""}`}>
               <div className="flex items-center justify-between gap-2">
-                <div>
+                <div className="min-w-0">
                   <p className="hud-label">Selected Order</p>
                   <h3 className="mt-1 truncate text-base font-semibold text-white">{selectedOrder ? shortId(selectedOrder.orderId ?? selectedOrder.clientId, 12) : "Awaiting target"}</h3>
                 </div>
-                {selectedOrder ? <div className={`shrink-0 status-pill ${toneClasses(toneForStatus(selectedOrder.status))}`}>{statusLabel(selectedOrder.status)}</div> : null}
+                {selectedOrder ? (
+                  <div
+                    className={`status-pill max-w-[9.5rem] shrink-0 justify-center whitespace-normal text-center leading-tight ${toneClasses(toneForStatus(selectedOrder.status))}`}
+                    title={statusLabel(selectedOrder.status)}
+                  >
+                    {statusLabel(selectedOrder.status)}
+                  </div>
+                ) : null}
               </div>
 
               {selectedOrder ? (
-                <div className="mt-3 flex h-[calc(100%-3.6rem)] min-h-0 flex-col">
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="rounded-[1.2rem] border border-white/10 bg-white/5 px-3 py-3"><div className="hud-label">Pilot</div><div className="mt-2 text-sm font-semibold text-white">{shortId(selectedOrder.userId, 10)}</div></div>
-                    <div className="rounded-[1.2rem] border border-white/10 bg-white/5 px-3 py-3"><div className="hud-label">Amount</div><div className="mt-2 text-sm font-semibold text-white">{selectedOrder.amount ?? "pending"}</div></div>
-                    <div className="rounded-[1.2rem] border border-white/10 bg-white/5 px-3 py-3"><div className="hud-label">Product</div><div className="mt-2 text-sm font-semibold text-white">{shortId(selectedOrder.productId, 10)}</div></div>
+                <div className="mt-3 flex h-[calc(100%-3.8rem)] min-h-0 flex-col">
+                  <div className="grid shrink-0 grid-cols-3 gap-2">
+                    <div className="min-w-0 rounded-lg border border-white/10 bg-white/5 px-2 py-2"><div className="hud-label">Pilot</div><div className="mt-1 truncate text-xs font-semibold text-white">{shortId(selectedOrder.userId, 10)}</div></div>
+                    <div className="min-w-0 rounded-lg border border-white/10 bg-white/5 px-2 py-2"><div className="hud-label">Amount</div><div className="mt-1 truncate text-xs font-semibold text-white">{selectedOrder.amount ?? "pending"}</div></div>
+                    <div className="min-w-0 rounded-lg border border-white/10 bg-white/5 px-2 py-2"><div className="hud-label">Product</div><div className="mt-1 truncate text-xs font-semibold text-white">{shortId(selectedOrder.productId, 10)}</div></div>
                   </div>
-                  <div className="mt-4 min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
+                  <div className="mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
                     {selectedOrder.timeline.map((event) => (
-                      <div key={`${selectedOrder.clientId}-${event.at}-${event.status}`} className="rounded-[1.3rem] border border-white/10 bg-white/5 px-4 py-3">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="text-sm font-semibold text-white">{event.label}</div>
-                          <div className="text-xs text-slate-400">{new Date(event.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</div>
+                      <div key={`${selectedOrder.clientId}-${event.at}-${event.status}`} className="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 break-words text-xs font-semibold leading-snug text-white">{event.label}</div>
+                          <div className="shrink-0 text-[11px] text-slate-400">{new Date(event.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</div>
                         </div>
-                        <div className="mt-2 text-xs text-slate-300">{summarizeFailureReason(event.reason)}</div>
+                        <div className="mt-1 break-words text-[11px] leading-snug text-slate-300">{summarizeFailureReason(event.reason)}</div>
                       </div>
                     ))}
                   </div>
                 </div>
               ) : (
-                <div className="mt-4 rounded-[1.5rem] border border-dashed border-white/10 bg-white/5 px-4 py-8 text-sm text-slate-400">Start the flash sale and select a sampled order to inspect its timeline here.</div>
+                <div className="mt-4 rounded-lg border border-dashed border-white/10 bg-white/5 px-4 py-8 text-sm text-slate-400">Start the flash sale and select an order to inspect its timeline here.</div>
               )}
             </div>
           </section>
@@ -1553,28 +1606,35 @@ export default function App({ sessionName, sessionEmail, sessionExpiresAt, onLog
           </CockpitErrorBoundary>
         </main>
 
-        <footer className={`mt-3 flex items-center justify-between rounded-[1.2rem] border border-white/10 bg-white/5 px-4 py-1.5 text-xs text-slate-400 ${tourSectionClasses("cockpit-footer")}`} data-tour-id="cockpit-footer">
-          <div className="flex items-center gap-4">
+        <footer className={`mt-3 flex flex-wrap items-center justify-between gap-2 rounded-[1.2rem] border border-white/10 bg-white/5 px-4 py-1.5 text-xs text-slate-400 ${tourSectionClasses("cockpit-footer")}`} data-tour-id="cockpit-footer">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1">
             <span>Stock sold: {formatCompact(stockSold)}</span>
             <span>Stock left: {formatPercent(stockLeftPercent)}</span>
             <span>Gateway state: {paymentConfig.circuitState}</span>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex flex-col items-end">
-              <span className="text-xs font-semibold text-cyan-100">{sessionName || sessionEmail}</span>
+          <div className="flex min-w-0 items-center gap-2">
+            <div className="flex min-w-0 max-w-72 flex-col items-end">
+              <span className="max-w-full truncate text-xs font-semibold text-cyan-100">{sessionName || sessionEmail}</span>
               {sessionExpiresAt && (
-                <span className="text-[9px] uppercase tracking-[0.12em] text-slate-400">
+                <span className="max-w-full truncate text-[9px] uppercase tracking-[0.12em] text-slate-400">
                   Valid until {new Date(sessionExpiresAt).toLocaleString([], { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}
                 </span>
               )}
             </div>
             <button
-              className="rounded-full border border-white/10 px-3 py-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-lg border border-white/10 px-3 py-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-white transition hover:border-cyan-200/35 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
               disabled={logoutPending}
               onClick={onLogout}
               type="button"
             >
               {logoutPending ? "..." : "Logout"}
+            </button>
+            <button
+              className="rounded-lg border border-cyan-300/25 bg-cyan-400/10 px-3 py-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-cyan-50 transition hover:border-cyan-200/55 hover:bg-cyan-400/18"
+              onClick={resetSimulationState}
+              type="button"
+            >
+              Reset
             </button>
           </div>
         </footer>
