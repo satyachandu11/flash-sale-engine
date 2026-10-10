@@ -106,7 +106,8 @@ jobs:
   # ─────────────────────────────────────────────
   docker:
     name: Docker Build & Push
-    runs-on: ubuntu-latest
+    # Production VM is Oracle Cloud Ampere (ARM64): build natively on GitHub's free ARM runner.
+    runs-on: ubuntu-24.04-arm
     needs: build
     permissions:
       contents: read
