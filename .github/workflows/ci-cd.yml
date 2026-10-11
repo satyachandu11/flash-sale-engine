@@ -209,8 +209,10 @@ jobs:
       - name: Trivy — Scan Order Service image
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         continue-on-error: true   # a scanner outage must not block the deploy
+        env:
+          TRIVY_PLATFORM: linux/arm64   # images are ARM64-only; Trivy otherwise looks for linux/amd64
         with:
-          image-ref: ${{ env.IMAGE_PREFIX }}/order-service:latest
+          image-ref: ${{ env.IMAGE_PREFIX }}/order-service:${{ steps.meta.outputs.tag }}
           severity: 'CRITICAL,HIGH'
           format: 'table'
           exit-code: '0'
