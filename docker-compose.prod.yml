@@ -80,8 +80,9 @@ services:
       APP_ADMIN_UI_ORIGIN: ${ADMIN_FRONTEND_URL}
       RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS:-10}
       RATE_LIMIT_WINDOW_SECONDS: ${RATE_LIMIT_WINDOW_SECONDS:-60}
-      JAVA_OPTS: "-Xmx256m -Xms128m"
-    mem_limit: 384m
+      # JAVA_TOOL_OPTIONS is read by the JVM itself (the Dockerfile ENTRYPOINT ignores JAVA_OPTS).
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx384m"
+    mem_limit: 768m
     depends_on:
       - postgres
       - kafka
@@ -105,8 +106,9 @@ services:
       SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
       APP_CORS_ALLOWED_ORIGIN: ${FRONTEND_URL}
       ADMIN_SERVICE_INTERNAL_SECRET: ${ADMIN_SERVICE_INTERNAL_SECRET}
-      JAVA_OPTS: "-Xmx256m -Xms128m"
-    mem_limit: 384m
+      # JAVA_TOOL_OPTIONS is read by the JVM itself (the Dockerfile ENTRYPOINT ignores JAVA_OPTS).
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx384m"
+    mem_limit: 768m
     depends_on:
       - postgres
       - kafka
@@ -127,8 +129,9 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       APP_CORS_ALLOWED_ORIGIN: ${FRONTEND_URL}
       PAYMENT_GATEWAY_FAILURE_RATE: ${PAYMENT_GATEWAY_FAILURE_RATE:-0.2}
-      JAVA_OPTS: "-Xmx256m -Xms128m"
-    mem_limit: 384m
+      # JAVA_TOOL_OPTIONS is read by the JVM itself (the Dockerfile ENTRYPOINT ignores JAVA_OPTS).
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx384m"
+    mem_limit: 768m
     depends_on:
       - postgres
       - kafka
@@ -165,8 +168,9 @@ services:
       APP_CORS_ALLOWED_ORIGIN: ${FRONTEND_URL}
       APP_PUBLIC_UI_ORIGIN: ${FRONTEND_URL}
       APP_ADMIN_UI_ORIGIN: ${ADMIN_FRONTEND_URL}
-      JAVA_OPTS: "-Xmx256m -Xms128m"
-    mem_limit: 384m
+      # JAVA_TOOL_OPTIONS is read by the JVM itself (the Dockerfile ENTRYPOINT ignores JAVA_OPTS).
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx384m"
+    mem_limit: 768m
     depends_on:
       - postgres
       - redis

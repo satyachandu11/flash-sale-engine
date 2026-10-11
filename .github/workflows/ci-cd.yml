@@ -295,8 +295,9 @@ jobs:
             curl -f http://localhost:8082/actuator/health || (echo "Payment service health check FAILED" && exit 1)
             curl -f http://localhost:8083/actuator/health || (echo "Admin service health check FAILED" && exit 1)
 
-            # Restart nginx after upstream containers have been recreated so it picks up fresh container IPs.
-            docker compose --env-file .env --env-file .deploy.env -f docker-compose.prod.yml restart nginx
+            # Recreate nginx after upstream containers have been recreated so it picks up fresh container IPs
+            # ("up" rather than "restart" so a fresh VM without an nginx container gets one).
+            docker compose --env-file .env --env-file .deploy.env -f docker-compose.prod.yml up -d --no-deps --force-recreate nginx
             sleep 10
 
             # Public smoke tests through nginx/domain routing with retries for transient startup windows.
@@ -356,5 +357,5 @@ jobs:
             fi
             cp .deploy.env.previous .deploy.env
             docker compose --env-file .env --env-file .deploy.env -f docker-compose.prod.yml up -d --no-deps order-service inventory-service payment-service admin-service frontend admin-frontend
-            docker compose --env-file .env --env-file .deploy.env -f docker-compose.prod.yml restart nginx
+            docker compose --env-file .env --env-file .deploy.env -f docker-compose.prod.yml up -d --no-deps --force-recreate nginx
             echo "Rollback complete."
